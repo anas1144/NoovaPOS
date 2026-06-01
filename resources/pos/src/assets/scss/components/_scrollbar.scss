@@ -69,7 +69,7 @@ html {
     }
 
     /* Resizer */
-    ::-webkit-scrollbar-resizer:vertical, ::-webkit-scrollbar-resizer:horizontal {
+    ::-webkit-scrollbar-resizer {
         border-radius: 0.188rem;
     }
 }

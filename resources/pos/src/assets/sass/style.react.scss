@@ -1,3 +1,10 @@
 // React vendors
-@import '~@fortawesome/fontawesome-free/css/all.min.css';
-@import '~bootstrap-icons/font/bootstrap-icons.css';
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+// NoovaPOS design tokens (CSS variables + dark glassmorphism defaults + utilities).
+// Must come first so custom rules can reference CSS variables.
+@import './design-tokens.scss';
+
+// NoovaPOS custom layout + component styles (sidebar, header, master-layout, etc.)
+@import '../scss/custom/custom.scss';

@@ -39,6 +39,10 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
+            // Initialise tenancy for API calls coming from tenant subdomains.
+            // Central-domain requests (noovapos.local, superadmin.noovapos.local)
+            // are excluded automatically via central_domains in tenancy config.
+            \Stancl\Tenancy\Middleware\InitializeTenancyByDomainOrSubdomain::class,
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import AsideDefault from "./sidebar/asideDefault";
 import Header from "./header/Header";
 import Footer from "./footer/Footer";
 import AsideTopSubMenuItem from "./sidebar/asideTopSubMenuItem";
 import { Tokens } from "../constants";
 import asideConfig from "../config/asideConfig";
-import { environment } from "../config/environment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { fetchConfig } from "../store/action/configAction";
@@ -24,13 +24,14 @@ const MasterLayout = (props) => {
     const [isMenuCollapse, setIsMenuCollapse] = useState(false);
     const newRoutes = config && prepareRoutes(config);
     const token = localStorage.getItem(Tokens.ADMIN);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (token) {
             fetchConfig();
-        }
-        if (!token) {
-            window.location.href = environment.URL + "#" + "/login";
+        } else {
+            // BrowserRouter-compatible redirect — no more hash refs
+            navigate('/login', { replace: true });
         }
     }, []);
 

@@ -59,11 +59,11 @@ const PurchaseReturn = (props) => {
 
     const goToEditProduct = (item) => {
         const id = item.id;
-        window.location.href = "#/app/purchase-return/edit/" + id;
+        navigate('/app/purchase-return/edit/' + id);
     };
 
     const goToPurchaseReturn = (ProductId) => {
-        window.location.href = "#/app/purchase-return/detail/" + ProductId;
+        navigate('/app/purchase-return/detail/' + ProductId);
     };
 
     //onClick pdf function

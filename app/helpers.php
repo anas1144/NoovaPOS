@@ -26,7 +26,7 @@ function getLogoUrl(): string
         $appLogo = Setting::where('key', '=', 'logo')->first();
     }
 
-    return $appLogo ? asset($appLogo->logo) : asset('images/nexus-logo.png');
+    return $appLogo ? asset($appLogo->logo) : asset('images/noovapos-logo.png');
 }
 
 if (! function_exists('getSettingValue')) {

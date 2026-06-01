@@ -1,11 +1,11 @@
 export const getFiles = () => {
-    const context = require.context('./', true, /.json$/);
+    const context = import.meta.glob('./*.json', { eager: true });
     const modules = {};
-    context.keys().forEach((key) => {
+
+    Object.entries(context).forEach(([key, resource]) => {
         const fileName = key.replace('./', '');
-        const resource = require(`./${fileName}`);
         const namespace = fileName.replace('.json', '');
-        modules[namespace] = JSON.parse(JSON.stringify(resource));
+        modules[namespace] = resource.default || resource;
     });
 
     return modules

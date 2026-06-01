@@ -10,6 +10,8 @@ import storage from 'redux-persist/lib/storage'
 import { persistReducer, persistStore } from 'redux-persist';
 import { PersistGate } from 'redux-persist/integration/react'
 import reportWebVitals from './reportWebVitals';
+// Apply persisted light/dark theme as early as possible.
+import './utils/theme';
 
 const persistConfig = {
     key: 'root',
@@ -38,6 +40,23 @@ ReactDOM.render(
     </Provider>,
     document.getElementById('root')
 );
+
+// Register the service worker for PWA / offline-first capability.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker
+            .register('/service-worker.js')
+            .then((reg) => {
+                if (reg && reg.update) {
+                    // pick up new versions on the fly
+                    setInterval(() => reg.update(), 60 * 60 * 1000);
+                }
+            })
+            .catch(() => {
+                /* PWA features disabled silently if registration fails */
+            });
+    });
+}
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

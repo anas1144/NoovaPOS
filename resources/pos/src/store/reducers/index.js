@@ -108,6 +108,13 @@ import { cartReducer } from "./cartReducer";
 import dualScreenReducer from "./dualScreenReducer";
 import frontCmsReducer from "./frontCmsReducer";
 import stockMovementReducer from "./stockMovementReducer";
+import shopReducer from "./shopReducer";
+import fbrProfileReducer from "./fbrProfileReducer";
+import offlineDeviceReducer from "./offlineDeviceReducer";
+import platformReducer from "./platformReducer";
+import restaurantReducer from "./restaurantReducer";
+import recurringReducer from "./recurringReducer";
+import accountingReducer from "./accountingReducer";
 
 export default combineReducers({
     loginUser: loginReducers,
@@ -219,4 +226,11 @@ export default combineReducers({
     dualScreenSetting: dualScreenReducer,
     frontCms: frontCmsReducer,
     stockMovement: stockMovementReducer,
+    shops: shopReducer,
+    fbrProfiles: fbrProfileReducer,
+    offlineSync: offlineDeviceReducer,
+    platform: platformReducer,
+    restaurant: restaurantReducer,
+    recurring: recurringReducer,
+    accounting: accountingReducer,
 });

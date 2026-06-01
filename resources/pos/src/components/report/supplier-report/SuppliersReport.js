@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from "react";
 import MasterLayout from "../../MasterLayout";
 import TabTitle from "../../../shared/tab-title/TabTitle";
@@ -16,6 +17,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFilePdf } from "@fortawesome/free-solid-svg-icons";
 
 const SuppliersReport = (props) => {
+    const navigate = useNavigate();
     const {
         isLoading,
         totalRecord,
@@ -71,7 +73,7 @@ const SuppliersReport = (props) => {
 
     const onReportsClick = (item) => {
         const id = item.id;
-        window.location.href = "#/app/report/suppliers/details/" + id;
+        navigate('/app/report/suppliers/details/' + id);
     };
 
     const columns = [

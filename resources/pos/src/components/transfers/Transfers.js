@@ -52,7 +52,7 @@ const Transfers = (props) => {
     //onClick edit function
     const goToEdit = (item) => {
         const id = item.id;
-        window.location.href = "#/app/transfers/" + id;
+        navigate('/app/transfers/' + id);
     };
 
     // post transfer function

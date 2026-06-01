@@ -1,5 +1,4 @@
 import {Tokens, errorMessage} from '../constants';
-import {environment} from './environment'
 import Cookies from 'js-cookie';
 
 export default {
@@ -13,8 +12,9 @@ export default {
                     config.headers['Authorization'] = `Bearer ${isToken}`;
                 }
                 if (!isToken) {
-                    if (!window.location.href.includes('login') && !window.location.href.includes('reset-password') && !window.location.href.includes('forgot-password')) {
-                        window.location.href = environment.URL + '#/' + 'login';
+                    const href = window.location.pathname;
+                    if (!href.includes('login') && !href.includes('reset-password') && !href.includes('forgot-password')) {
+                        window.location.href = '/login';
                     }
                 }
                 if (isFormData) {
@@ -39,11 +39,11 @@ export default {
                 localStorage.removeItem(Tokens.ADMIN);
                 localStorage.removeItem(Tokens.USER);
                 localStorage.removeItem(Tokens.GET_PERMISSIONS);
-                window.location.href = environment.URL + '#' + '/login';
-            }else if(error.response.status === 403 || error.response.status === 404) {
-                window.location.href = environment.URL + '#' + '/app/dashboard';
-            }else {
-                return Promise.reject({...error})
+                window.location.href = '/login';
+            } else if (error.response.status === 403 || error.response.status === 404) {
+                window.location.href = '/app/dashboard';
+            } else {
+                return Promise.reject({...error});
             }
         };
         const successHandler = (response) => {

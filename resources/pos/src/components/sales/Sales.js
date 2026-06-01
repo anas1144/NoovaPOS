@@ -85,7 +85,7 @@ const Sales = (props) => {
     //sale edit function
     const goToEdit = (item) => {
         const id = item.id;
-        window.location.href = "#/app/sales/edit/" + id;
+        navigate('/app/sales/edit/' + id);
     };
 
     // post sale function
@@ -130,7 +130,7 @@ const Sales = (props) => {
 
     //sale details function
     const goToDetailScreen = (ProductId) => {
-        window.location.href = "#/app/sales/detail/" + ProductId;
+        navigate('/app/sales/detail/' + ProductId);
     };
 
     const [paymentPrint, setPaymentPrint] = useState({});

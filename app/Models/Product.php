@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Contracts\JsonResourceful;
 use App\Traits\HasJsonResourcefulData;
+use App\Traits\MeilisearchProduct;
 use App\Traits\Multitenantable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -89,7 +90,7 @@ use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
  */
 class Product extends BaseModel implements HasMedia, JsonResourceful
 {
-    use HasFactory, InteractsWithMedia, HasJsonResourcefulData, BelongsToTenant, Multitenantable;
+    use HasFactory, InteractsWithMedia, HasJsonResourcefulData, BelongsToTenant, Multitenantable, MeilisearchProduct;
 
     protected $table = 'products';
 

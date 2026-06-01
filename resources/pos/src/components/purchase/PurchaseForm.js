@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { connect, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate, Link} from 'react-router-dom';
 import moment from 'moment';
 import { InputGroup, Table } from 'react-bootstrap-v5';
 import { searchPurchaseProduct } from '../../store/action/purchaseProductAction';
@@ -556,9 +556,9 @@ const PurchaseForm = ( props ) => {
                                 {isPosting ? getFormattedMessage("globally.post.posting") || "Posting..." : getFormattedMessage("globally.post.button") || "Post Purchase"}
                             </button>
                         )}
-                        <a href="#/app/purchases" className="btn btn-secondary">
+                        <Link to="/app/purchases" className="btn btn-secondary">
                             {getFormattedMessage("globally.cancel-btn")}
-                        </a>
+                        </Link>
                     </div>
                 </div>
                 {/*</Form>*/}

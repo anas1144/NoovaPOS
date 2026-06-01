@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import {useNavigate, useLocation, Link} from 'react-router-dom';
 import { Form, InputGroup } from 'react-bootstrap-v5';
 import moment from 'moment';
 import { connect, useDispatch } from 'react-redux';
@@ -684,9 +684,9 @@ const SalesForm = ( props ) => {
                                 {isPosting ? getFormattedMessage("globally.post.posting") || "Posting..." : getFormattedMessage("globally.post.button") || "Post Sale"}
                             </button>
                         )}
-                        <a href="#/app/sales" className="btn btn-secondary">
+                        <Link to="/app/sales" className="btn btn-secondary">
                             {getFormattedMessage("globally.cancel-btn")}
-                        </a>
+                        </Link>
                     </div>
                 </div>
                 {/*</Form>*/}

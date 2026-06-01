@@ -62,6 +62,6 @@ class Setting extends Model implements HasMedia
             return $media->getFullUrl();
         }
 
-        return asset('images/nexus.png');
+        return asset('images/noovapos.png');
     }
 }

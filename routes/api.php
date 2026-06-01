@@ -46,6 +46,14 @@ use App\Http\Controllers\MailTemplateAPIController;
 use App\Http\Controllers\API\PaymentMethodAPIController; // Changed
 use App\Http\Controllers\API\PlatformTenantController;
 use App\Http\Controllers\API\PlatformSaasController;
+use App\Http\Controllers\API\RestaurantAPIController;
+use App\Http\Controllers\API\RecurringAPIController;
+use App\Http\Controllers\API\AccountingAPIController;
+use App\Http\Controllers\API\NotificationAPIController;
+use App\Http\Controllers\API\InsightsAPIController;
+use App\Http\Controllers\API\HRAPIController;
+use App\Http\Controllers\API\CRMAPIController;
+use App\Http\Controllers\API\PublicController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -311,6 +319,11 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
         Route::get('fbr-profiles/{fbrProfile}', [FbrProfileAPIController::class, 'show']);
         Route::post('fbr-profiles/{fbrProfile}', [FbrProfileAPIController::class, 'update']);
         Route::delete('fbr-profiles/{fbrProfile}', [FbrProfileAPIController::class, 'destroy']);
+        Route::get('fbr-invoices', [FbrProfileAPIController::class, 'invoices']);
+        Route::post('fbr-invoices/from-sale/{sale}', [FbrProfileAPIController::class, 'queueFromSale']);
+        Route::post('fbr-invoices/{fbrInvoice}/submit', [FbrProfileAPIController::class, 'submitInvoice']);
+        Route::post('fbr-invoices/{fbrInvoice}/retry', [FbrProfileAPIController::class, 'retryInvoice']);
+        Route::post('fbr-invoices/process-queue', [FbrProfileAPIController::class, 'processFbrQueue']);
     });
 
     Route::middleware('permission:manage_offline_devices')->group(function () {
@@ -321,6 +334,92 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
     Route::post('offline-devices/register', [OfflineSyncAPIController::class, 'registerDevice']);
     Route::post('offline-devices/{offlineDevice}/heartbeat', [OfflineSyncAPIController::class, 'heartbeat']);
     Route::post('offline-sync/batches', [OfflineSyncAPIController::class, 'pushBatch']);
+
+    // Restaurant module
+    Route::get('restaurant/halls', [RestaurantAPIController::class, 'halls']);
+    Route::post('restaurant/halls', [RestaurantAPIController::class, 'storeHall']);
+    Route::patch('restaurant/halls/{hall}', [RestaurantAPIController::class, 'updateHall']);
+    Route::delete('restaurant/halls/{hall}', [RestaurantAPIController::class, 'destroyHall']);
+
+    Route::get('restaurant/tables', [RestaurantAPIController::class, 'tables']);
+    Route::post('restaurant/tables', [RestaurantAPIController::class, 'storeTable']);
+    Route::patch('restaurant/tables/{table}', [RestaurantAPIController::class, 'updateTable']);
+    Route::delete('restaurant/tables/{table}', [RestaurantAPIController::class, 'destroyTable']);
+    Route::patch('restaurant/tables/{table}/state', [RestaurantAPIController::class, 'changeTableState']);
+
+    Route::get('restaurant/kots', [RestaurantAPIController::class, 'tickets']);
+    Route::post('restaurant/kots', [RestaurantAPIController::class, 'storeTicket']);
+    Route::patch('restaurant/kots/{ticket}/status', [RestaurantAPIController::class, 'updateTicketStatus']);
+
+    // Recurring / Water Supply module
+    Route::get('recurring/plans', [RecurringAPIController::class, 'plans']);
+    Route::post('recurring/plans', [RecurringAPIController::class, 'storePlan']);
+    Route::patch('recurring/plans/{plan}', [RecurringAPIController::class, 'updatePlan']);
+    Route::delete('recurring/plans/{plan}', [RecurringAPIController::class, 'destroyPlan']);
+
+    Route::get('recurring/customer-subscriptions', [RecurringAPIController::class, 'subscriptions']);
+    Route::post('recurring/customer-subscriptions', [RecurringAPIController::class, 'storeSubscription']);
+    Route::patch('recurring/customer-subscriptions/{subscription}', [RecurringAPIController::class, 'updateSubscription']);
+    Route::post('recurring/customer-subscriptions/{subscription}/pause', [RecurringAPIController::class, 'pauseSubscription']);
+    Route::post('recurring/customer-subscriptions/{subscription}/resume', [RecurringAPIController::class, 'resumeSubscription']);
+    Route::delete('recurring/customer-subscriptions/{subscription}', [RecurringAPIController::class, 'destroySubscription']);
+    Route::post('recurring/customer-subscriptions/{subscription}/generate-invoice', [RecurringAPIController::class, 'generateInvoice']);
+
+    Route::get('recurring/delivery-schedules', [RecurringAPIController::class, 'deliveries']);
+    Route::patch('recurring/delivery-schedules/{delivery}', [RecurringAPIController::class, 'updateDelivery']);
+
+    Route::get('recurring/invoices', [RecurringAPIController::class, 'invoices']);
+    Route::post('recurring/invoices/{invoice}/pay', [RecurringAPIController::class, 'payInvoice']);
+
+    // Accounting module
+    Route::get('accounting/accounts', [AccountingAPIController::class, 'accounts']);
+    Route::post('accounting/accounts', [AccountingAPIController::class, 'storeAccount']);
+    Route::patch('accounting/accounts/{account}', [AccountingAPIController::class, 'updateAccount']);
+    Route::delete('accounting/accounts/{account}', [AccountingAPIController::class, 'destroyAccount']);
+
+    Route::get('accounting/journal-entries', [AccountingAPIController::class, 'journalEntries']);
+    Route::post('accounting/journal-entries', [AccountingAPIController::class, 'storeJournalEntry']);
+    Route::patch('accounting/journal-entries/{journal}/post', [AccountingAPIController::class, 'postJournalEntry']);
+    Route::get('accounting/trial-balance', [AccountingAPIController::class, 'trialBalance']);
+    Route::get('accounting/profit-loss', [AccountingAPIController::class, 'profitAndLoss']);
+    Route::get('accounting/balance-sheet', [AccountingAPIController::class, 'balanceSheet']);
+    Route::get('accounting/ledger/{account}', [AccountingAPIController::class, 'ledger']);
+    Route::post('accounting/seed-chart-of-accounts', [AccountingAPIController::class, 'seedChartOfAccounts']);
+    Route::post('accounting/auto-post/sale/{sale}', [AccountingAPIController::class, 'autoPostSale']);
+    Route::post('accounting/auto-post/purchase/{purchase}', [AccountingAPIController::class, 'autoPostPurchase']);
+    Route::post('accounting/auto-post/expense/{expense}', [AccountingAPIController::class, 'autoPostExpense']);
+
+    // Notifications
+    Route::get('notifications', [NotificationAPIController::class, 'index']);
+    Route::get('notifications/unread-count', [NotificationAPIController::class, 'unreadCount']);
+    Route::post('notifications', [NotificationAPIController::class, 'store']);
+    Route::patch('notifications/{notification}/read', [NotificationAPIController::class, 'markRead']);
+    Route::post('notifications/mark-all-read', [NotificationAPIController::class, 'markAllRead']);
+    Route::delete('notifications/{notification}', [NotificationAPIController::class, 'destroy']);
+    Route::post('notifications/dispatch', [NotificationAPIController::class, 'dispatchPending']);
+
+    // AI / Insights
+    Route::get('insights/sales-forecast', [InsightsAPIController::class, 'salesForecast']);
+    Route::get('insights/reorder-suggestions', [InsightsAPIController::class, 'reorderSuggestions']);
+    Route::get('insights/customer-trends', [InsightsAPIController::class, 'customerTrends']);
+
+    // HR
+    Route::get('hr/employees', [HRAPIController::class, 'employees']);
+    Route::post('hr/employees', [HRAPIController::class, 'storeEmployee']);
+    Route::patch('hr/employees/{employee}', [HRAPIController::class, 'updateEmployee']);
+    Route::delete('hr/employees/{employee}', [HRAPIController::class, 'destroyEmployee']);
+    Route::get('hr/attendance', [HRAPIController::class, 'attendance']);
+    Route::post('hr/employees/{employee}/check-in', [HRAPIController::class, 'checkIn']);
+    Route::post('hr/employees/{employee}/check-out', [HRAPIController::class, 'checkOut']);
+    Route::patch('hr/attendance/{attendance}', [HRAPIController::class, 'updateAttendance']);
+
+    // CRM
+    Route::get('crm/leads', [CRMAPIController::class, 'leads']);
+    Route::post('crm/leads', [CRMAPIController::class, 'storeLead']);
+    Route::patch('crm/leads/{lead}', [CRMAPIController::class, 'updateLead']);
+    Route::patch('crm/leads/{lead}/stage', [CRMAPIController::class, 'changeStage']);
+    Route::delete('crm/leads/{lead}', [CRMAPIController::class, 'destroyLead']);
+    Route::get('crm/pipeline-stats', [CRMAPIController::class, 'pipelineStats']);
 
     Route::get('settings', [SettingAPIController::class, 'index']);
 
@@ -503,6 +602,18 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
 Route::post('login', [AuthController::class, 'login'])->name('login');
 Route::post('register', [AuthController::class, 'register']);
 Route::post('register-tenant', [TenantRegistrationController::class, 'register'])->name('tenant.register');
+
+// ── Public marketing endpoints (no auth required) ─────────────────────
+Route::prefix('public')->name('public.')->group(function () {
+    Route::get('plans',               [PublicController::class, 'plans'])->name('plans');
+    Route::post('demo-request',       [PublicController::class, 'demoRequest'])->name('demo-request');
+});
+
+// Super-admin only: manage demo requests (requires Sanctum auth)
+Route::middleware('auth:sanctum')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('demo-requests',        [PublicController::class, 'demoRequestList'])->name('demo-requests.index');
+    Route::patch('demo-requests/{id}', [PublicController::class, 'demoRequestUpdate'])->name('demo-requests.update');
+});
 
 Route::post(
     '/forgot-password',

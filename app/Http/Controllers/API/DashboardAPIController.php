@@ -15,6 +15,7 @@ use App\Models\PurchaseReturn;
 use App\Models\Sale;
 use App\Models\SaleReturn;
 use App\Models\SalesPayment;
+use App\Services\TenantCacheService;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\JsonResponse;
@@ -22,17 +23,32 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardAPIController extends AppBaseController
 {
+    public function __construct(private readonly TenantCacheService $tenantCache)
+    {
+    }
+
+    /**
+     * Today's KPI tiles — cached 60 s so heavy aggregate queries run at most
+     * once per minute per tenant, even under many open dashboard tabs.
+     */
     public function getPurchaseSalesCounts(): JsonResponse
     {
-        $data = [];
-        $today = Carbon::today();
+        $today = Carbon::today()->toDateString();
 
-        $data['today_sales'] = (float) Sale::where('date', $today)->sum('grand_total');
-        $data['today_purchases'] = (float) Purchase::whereHas('warehouse')->where('date', $today)->sum('grand_total');
-        $data['today_sale_return'] = (float) SaleReturn::whereHas('warehouse')->where('date', $today)->sum('grand_total');
-        $data['today_purchase_return'] = (float) PurchaseReturn::whereHas('warehouse')->where('date', $today)->sum('grand_total');
-        $data['today_sales_received_count'] = (float) SalesPayment::whereHas('sale')->where('payment_date', $today)->sum('amount');
-        $data['today_expense_count'] = (float) Expense::whereHas('warehouse')->where('date', $today)->where('posted_status', Expense::STATUS_POSTED)->sum('amount');
+        $data = $this->tenantCache->remember(
+            "dashboard.today_counts.{$today}",
+            60,
+            function () use ($today) {
+                return [
+                    'today_sales'               => (float) Sale::where('date', $today)->sum('grand_total'),
+                    'today_purchases'           => (float) Purchase::whereHas('warehouse')->where('date', $today)->sum('grand_total'),
+                    'today_sale_return'         => (float) SaleReturn::whereHas('warehouse')->where('date', $today)->sum('grand_total'),
+                    'today_purchase_return'     => (float) PurchaseReturn::whereHas('warehouse')->where('date', $today)->sum('grand_total'),
+                    'today_sales_received_count'=> (float) SalesPayment::whereHas('sale')->where('payment_date', $today)->sum('amount'),
+                    'today_expense_count'       => (float) Expense::whereHas('warehouse')->where('date', $today)->where('posted_status', Expense::STATUS_POSTED)->sum('amount'),
+                ];
+            }
+        );
 
         return $this->sendResponse($data, 'Sales Purchase Count Retrieved Successfully');
     }
@@ -40,32 +56,38 @@ class DashboardAPIController extends AppBaseController
     public function getAllPurchaseSalesCounts(): JsonResponse
     {
         $startDate = request()->query('start_date');
-        $endDate = request()->query('end_date');
+        $endDate   = request()->query('end_date');
 
-        $data = [];
+        // Cache key encodes the date range so different ranges get different slots.
+        $cacheKey = 'dashboard.all_counts.' . ($startDate ?? 'all') . '_' . ($endDate ?? 'all');
 
-        $salesQuery = Sale::query();
-        $saleReturnQuery = SaleReturn::whereHas('warehouse');
-        $purchaseReturnQuery = PurchaseReturn::whereHas('warehouse');
-        $purchaseQuery = Purchase::whereHas('warehouse');
-        $salesPaymentQuery = SalesPayment::whereHas('sale');
-        $expenseQuery = Expense::whereHas('warehouse')->where('posted_status', Expense::STATUS_POSTED);
+        $data = $this->tenantCache->remember($cacheKey, 120, function () use ($startDate, $endDate) {
+            $salesQuery          = Sale::query();
+            $saleReturnQuery     = SaleReturn::whereHas('warehouse');
+            $purchaseReturnQuery = PurchaseReturn::whereHas('warehouse');
+            $purchaseQuery       = Purchase::whereHas('warehouse');
+            $salesPaymentQuery   = SalesPayment::whereHas('sale');
+            $expenseQuery        = Expense::whereHas('warehouse')->where('posted_status', Expense::STATUS_POSTED);
 
-        if ($startDate && $endDate) {
-            $salesQuery->whereBetween('date', [$startDate, $endDate]);
-            $saleReturnQuery->whereBetween('date', [$startDate, $endDate]);
-            $purchaseReturnQuery->whereBetween('date', [$startDate, $endDate]);
-            $purchaseQuery->whereBetween('date', [$startDate, $endDate]);
-            $salesPaymentQuery->whereBetween('payment_date', [$startDate, $endDate]);
-            $expenseQuery->whereBetween('date', [$startDate, $endDate]);
-        }
+            if ($startDate && $endDate) {
+                $salesQuery->whereBetween('date', [$startDate, $endDate]);
+                $saleReturnQuery->whereBetween('date', [$startDate, $endDate]);
+                $purchaseReturnQuery->whereBetween('date', [$startDate, $endDate]);
+                $purchaseQuery->whereBetween('date', [$startDate, $endDate]);
+                $salesPaymentQuery->whereBetween('payment_date', [$startDate, $endDate]);
+                $expenseQuery->whereBetween('date', [$startDate, $endDate]);
+            }
 
-        $data['all_sales_count'] = (float) $salesQuery->sum('grand_total');
-        $data['all_sale_return_count'] = (float) $saleReturnQuery->sum('grand_total');
-        $data['all_purchase_return_count'] = (float) $purchaseReturnQuery->sum('grand_total');
-        $data['all_purchases_count'] = (float) $purchaseQuery->sum('grand_total') - $data['all_purchase_return_count'];
-        $data['all_sales_received_count'] = (float) $salesPaymentQuery->sum('amount');
-        $data['all_expense_count'] = (float) $expenseQuery->sum('amount');
+            $purchaseReturn = (float) $purchaseReturnQuery->sum('grand_total');
+            return [
+                'all_sales_count'          => (float) $salesQuery->sum('grand_total'),
+                'all_sale_return_count'    => (float) $saleReturnQuery->sum('grand_total'),
+                'all_purchase_return_count'=> $purchaseReturn,
+                'all_purchases_count'      => (float) $purchaseQuery->sum('grand_total') - $purchaseReturn,
+                'all_sales_received_count' => (float) $salesPaymentQuery->sum('amount'),
+                'all_expense_count'        => (float) $expenseQuery->sum('amount'),
+            ];
+        });
 
         return $this->sendResponse($data, 'All Sales Purchase and Returns Count Retrieved Successfully');
     }

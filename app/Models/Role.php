@@ -52,9 +52,23 @@ class Role extends roleModal
         'guard_name',
     ];
 
-    const ADMIN = 'admin';
-    const SUPER_ADMIN = 'platform_super_admin';
-    const TENANT_OWNER = 'tenant_owner';
+    // Platform level
+    const SUPER_ADMIN       = 'platform_super_admin';
+
+    // Tenant level
+    const ADMIN             = 'admin';
+    const TENANT_OWNER      = 'tenant_owner';
+
+    // Branch / Store level
+    const BRANCH_MANAGER    = 'branch_manager';
+
+    // Shop / POS Counter level
+    const SHOP_MANAGER      = 'shop_manager';
+    const CASHIER           = 'cashier';
+    const WAITER            = 'waiter';
+    const ACCOUNTANT        = 'accountant';
+    const INVENTORY_MANAGER = 'inventory_manager';
+    const DELIVERY_STAFF    = 'delivery_staff';
 
     public static $rules = [
         'name' => 'required|unique:roles',

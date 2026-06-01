@@ -9,7 +9,7 @@ const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 class CacheService {
     constructor() {
         this.storage = localStorage;
-        this.prefix = 'nexus_cache_';
+        this.prefix = 'noovapos_cache_';
     }
 
     /**

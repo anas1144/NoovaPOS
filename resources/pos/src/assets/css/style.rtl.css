@@ -16073,7 +16073,7 @@ html ::-webkit-scrollbar-thumb:vertical, html ::-webkit-scrollbar-thumb:horizont
 html ::-webkit-scrollbar-corner:vertical, html ::-webkit-scrollbar-corner:horizontal {
   background-color: #000;
 }
-html ::-webkit-scrollbar-resizer:vertical, html ::-webkit-scrollbar-resizer:horizontal {
+html ::-webkit-scrollbar-resizer {
   border-radius: 0.188rem;
 }
 

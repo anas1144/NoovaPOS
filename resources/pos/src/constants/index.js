@@ -117,7 +117,32 @@ export const apiBaseURL = {
     DUAL_SCREEN_SETTINGS_UPDATE: "dual-screen-settings/update",
     SEND_TEST_EMAIL: "send-test-email",
     FRONT_CMS: "front-cms",
-    CHANGE_USER_PASSWORD: "change-user-password"
+    CHANGE_USER_PASSWORD: "change-user-password",
+    SHOPS: "shops",
+    FBR_PROFILES: "fbr-profiles",
+    OFFLINE_DEVICES: "offline-devices",
+    SYNC_QUEUE: "sync-queue",
+    STOCK_MOVEMENTS: "stock-movements",
+    STOCK_MOVEMENTS_SUMMARY: "stock-movements-summary",
+    PLATFORM_DASHBOARD: "platform/dashboard",
+    PLATFORM_TENANTS: "platform/tenants",
+    PLATFORM_PLANS: "platform/plans",
+    PLATFORM_SUBSCRIPTIONS: "platform/subscriptions",
+    PLATFORM_AUDIT_LOGS: "platform/audit-logs",
+    PLATFORM_BACKUPS: "platform/backups",
+    RESTAURANT_HALLS: "restaurant/halls",
+    RESTAURANT_TABLES: "restaurant/tables",
+    RESTAURANT_KOTS: "restaurant/kots",
+    RECURRING_PLANS: "recurring/plans",
+    CUSTOMER_SUBSCRIPTIONS: "recurring/customer-subscriptions",
+    DELIVERY_SCHEDULES: "recurring/delivery-schedules",
+    DELIVERIES: "recurring/deliveries",
+    ACCOUNTS: "accounting/accounts",
+    JOURNAL_ENTRIES: "accounting/journal-entries",
+    TRIAL_BALANCE: "accounting/trial-balance",
+    PROFIT_LOSS: "accounting/profit-loss",
+    BALANCE_SHEET: "accounting/balance-sheet",
+    NOTIFICATIONS: "notifications",
 };
 
 export const authActionType = {
@@ -730,6 +755,61 @@ export const Permissions = {
     VIEW_USERS: "view_users",
     EDIT_USERS: "edit_users",
     DELETE_USERS: "delete_users",
+    MANAGE_SHOPS: "manage_shops",
+    MANAGE_FBR: "manage_fbr",
+    MANAGE_OFFLINE_DEVICES: "manage_offline_devices",
+    MANAGE_PLATFORM: "platform_super_admin",
+};
+
+export const shopActionType = {
+    FETCH_SHOPS: "FETCH_SHOPS",
+    FETCH_SHOP: "FETCH_SHOP",
+    ADD_SHOP: "ADD_SHOP",
+    EDIT_SHOP: "EDIT_SHOP",
+    DELETE_SHOP: "DELETE_SHOP",
+};
+
+export const fbrProfileActionType = {
+    FETCH_FBR_PROFILES: "FETCH_FBR_PROFILES",
+    FETCH_FBR_PROFILE: "FETCH_FBR_PROFILE",
+    ADD_FBR_PROFILE: "ADD_FBR_PROFILE",
+    EDIT_FBR_PROFILE: "EDIT_FBR_PROFILE",
+    DELETE_FBR_PROFILE: "DELETE_FBR_PROFILE",
+};
+
+export const offlineDeviceActionType = {
+    FETCH_OFFLINE_DEVICES: "FETCH_OFFLINE_DEVICES",
+    FETCH_SYNC_QUEUE: "FETCH_SYNC_QUEUE",
+};
+
+export const platformActionType = {
+    FETCH_PLATFORM_DASHBOARD: "FETCH_PLATFORM_DASHBOARD",
+    FETCH_PLATFORM_TENANTS: "FETCH_PLATFORM_TENANTS",
+    FETCH_PLATFORM_PLANS: "FETCH_PLATFORM_PLANS",
+    FETCH_PLATFORM_SUBSCRIPTIONS: "FETCH_PLATFORM_SUBSCRIPTIONS",
+    FETCH_PLATFORM_AUDIT_LOGS: "FETCH_PLATFORM_AUDIT_LOGS",
+    FETCH_PLATFORM_BACKUPS: "FETCH_PLATFORM_BACKUPS",
+    ADD_PLAN: "ADD_PLAN",
+    EDIT_PLAN: "EDIT_PLAN",
+};
+
+export const restaurantActionType = {
+    FETCH_HALLS: "FETCH_HALLS",
+    FETCH_TABLES: "FETCH_TABLES",
+    FETCH_KOTS: "FETCH_KOTS",
+};
+
+export const recurringActionType = {
+    FETCH_RECURRING_PLANS: "FETCH_RECURRING_PLANS",
+    FETCH_CUSTOMER_SUBSCRIPTIONS: "FETCH_CUSTOMER_SUBSCRIPTIONS",
+    FETCH_DELIVERY_SCHEDULES: "FETCH_DELIVERY_SCHEDULES",
+    FETCH_DELIVERIES: "FETCH_DELIVERIES",
+};
+
+export const accountingActionType = {
+    FETCH_ACCOUNTS: "FETCH_ACCOUNTS",
+    FETCH_JOURNAL_ENTRIES: "FETCH_JOURNAL_ENTRIES",
+    FETCH_TRIAL_BALANCE: "FETCH_TRIAL_BALANCE",
 };
 
 //POS Screen Constants

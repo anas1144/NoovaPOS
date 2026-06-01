@@ -67,11 +67,11 @@ const Product = (props) => {
 
     const goToEditProduct = (item) => {
         const id = item.id;
-        window.location.href = "#/app/purchases/edit/" + id;
+        navigate('/app/purchases/edit/' + id);
     };
 
     const goToDetailScreen = (ProductId) => {
-        window.location.href = "#/app/purchases/detail/" + ProductId;
+        navigate('/app/purchases/detail/' + ProductId);
     };
 
     const onShowPaymentClick = () => {

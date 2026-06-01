@@ -23,7 +23,14 @@ class Shop extends BaseModel implements JsonResourceful
         'store_id',
         'name',
         'code',
+        'shop_type',
+        'enabled_modules',
         'status',
+    ];
+
+    protected $casts = [
+        'status' => 'boolean',
+        'enabled_modules' => 'array',
     ];
 
     public static function rules(): array
@@ -32,6 +39,8 @@ class Shop extends BaseModel implements JsonResourceful
             'store_id' => 'required|exists:stores,id',
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:255',
+            'shop_type' => 'nullable|string|max:60',
+            'enabled_modules' => 'nullable',
             'status' => 'nullable|boolean',
         ];
     }
@@ -50,6 +59,8 @@ class Shop extends BaseModel implements JsonResourceful
             'store_name' => $this->store?->name,
             'name' => $this->name,
             'code' => $this->code,
+            'shop_type' => $this->shop_type ?: 'retail',
+            'enabled_modules' => $this->enabled_modules,
             'status' => (bool) $this->status,
             'users' => $this->users()->count(),
             'created_at' => $this->created_at,

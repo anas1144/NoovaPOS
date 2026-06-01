@@ -96,6 +96,33 @@ import EditPurchaseReturnForm from "./components/purchaseReturn/EditPurchaseRetu
 import PaymentMethod from "./components/paymentMethod/PaymentMethod";
 import CustomerDisplay from "./components/customerDisplay/CustomerDisplay";
 import DualScreenSetting from "./components/settings/DualScreenSetting";
+import Shop from "./components/shop/Shop";
+import FbrProfiles from "./components/fbrProfile/FbrProfiles";
+import OfflineDevices from "./components/offlineSync/OfflineDevices";
+import SyncQueue from "./components/offlineSync/SyncQueue";
+import PlatformDashboard from "./components/platform/PlatformDashboard";
+import PlatformTenants from "./components/platform/PlatformTenants";
+import PlatformPlans from "./components/platform/PlatformPlans";
+import PlatformSubscriptions from "./components/platform/PlatformSubscriptions";
+import PlatformAuditLogs from "./components/platform/PlatformAuditLogs";
+import PlatformBackups from "./components/platform/PlatformBackups";
+import Halls from "./components/restaurant/Halls";
+import Tables from "./components/restaurant/Tables";
+import KotBoard from "./components/restaurant/KotBoard";
+import RecurringPlans from "./components/recurring/RecurringPlans";
+import CustomerSubscriptions from "./components/recurring/CustomerSubscriptions";
+import DeliverySchedules from "./components/recurring/DeliverySchedules";
+import ChartOfAccounts from "./components/accounting/ChartOfAccounts";
+import JournalEntries from "./components/accounting/JournalEntries";
+import TrialBalance from "./components/accounting/TrialBalance";
+import ProfitLoss from "./components/accounting/ProfitLoss";
+import BalanceSheet from "./components/accounting/BalanceSheet";
+import Notifications from "./components/notifications/Notifications";
+import Insights from "./components/insights/Insights";
+import FbrInvoices from "./components/fbrProfile/FbrInvoices";
+import Employees from "./components/hr/Employees";
+import Attendance from "./components/hr/Attendance";
+import Pipeline from "./components/crm/Pipeline";
 
 export const route = [
     {
@@ -592,6 +619,141 @@ export const route = [
     {
         path: "customer-display",
         ele: <CustomerDisplay />,
+        permission: "",
+    },
+    {
+        path: "shops",
+        ele: <Shop />,
+        permission: "",
+    },
+    {
+        path: "fbr-profiles",
+        ele: <FbrProfiles />,
+        permission: "",
+    },
+    {
+        path: "offline-devices",
+        ele: <OfflineDevices />,
+        permission: "",
+    },
+    {
+        path: "sync-queue",
+        ele: <SyncQueue />,
+        permission: "",
+    },
+    {
+        path: "platform/dashboard",
+        ele: <PlatformDashboard />,
+        permission: "",
+    },
+    {
+        path: "platform/tenants",
+        ele: <PlatformTenants />,
+        permission: "",
+    },
+    {
+        path: "platform/plans",
+        ele: <PlatformPlans />,
+        permission: "",
+    },
+    {
+        path: "platform/subscriptions",
+        ele: <PlatformSubscriptions />,
+        permission: "",
+    },
+    {
+        path: "platform/audit-logs",
+        ele: <PlatformAuditLogs />,
+        permission: "",
+    },
+    {
+        path: "platform/backups",
+        ele: <PlatformBackups />,
+        permission: "",
+    },
+    {
+        path: "restaurant/halls",
+        ele: <Halls />,
+        permission: "",
+    },
+    {
+        path: "restaurant/tables",
+        ele: <Tables />,
+        permission: "",
+    },
+    {
+        path: "restaurant/kots",
+        ele: <KotBoard />,
+        permission: "",
+    },
+    {
+        path: "recurring/plans",
+        ele: <RecurringPlans />,
+        permission: "",
+    },
+    {
+        path: "recurring/subscriptions",
+        ele: <CustomerSubscriptions />,
+        permission: "",
+    },
+    {
+        path: "recurring/deliveries",
+        ele: <DeliverySchedules />,
+        permission: "",
+    },
+    {
+        path: "accounting/chart-of-accounts",
+        ele: <ChartOfAccounts />,
+        permission: "",
+    },
+    {
+        path: "accounting/journal-entries",
+        ele: <JournalEntries />,
+        permission: "",
+    },
+    {
+        path: "accounting/trial-balance",
+        ele: <TrialBalance />,
+        permission: "",
+    },
+    {
+        path: "accounting/profit-loss",
+        ele: <ProfitLoss />,
+        permission: "",
+    },
+    {
+        path: "accounting/balance-sheet",
+        ele: <BalanceSheet />,
+        permission: "",
+    },
+    {
+        path: "notifications",
+        ele: <Notifications />,
+        permission: "",
+    },
+    {
+        path: "insights",
+        ele: <Insights />,
+        permission: "",
+    },
+    {
+        path: "fbr-invoices",
+        ele: <FbrInvoices />,
+        permission: "",
+    },
+    {
+        path: "hr/employees",
+        ele: <Employees />,
+        permission: "",
+    },
+    {
+        path: "hr/attendance",
+        ele: <Attendance />,
+        permission: "",
+    },
+    {
+        path: "crm/pipeline",
+        ele: <Pipeline />,
         permission: "",
     },
 ];

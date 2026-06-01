@@ -1,0 +1,107 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\DemoRequest;
+use App\Models\Plan;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+
+class PublicController extends Controller
+{
+    /**
+     * GET /api/public/plans
+     * Returns publicly visible plans ordered by sort_order.
+     */
+    public function plans(): JsonResponse
+    {
+        $plans = Plan::query()
+            ->where('status', true)
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->get([
+                'id', 'name', 'slug', 'description',
+                'price', 'price_pkr', 'price_yearly', 'price_yearly_pkr',
+                'per_shop_price', 'per_shop_price_pkr',
+                'trial_days', 'billing_cycle',
+                'max_stores', 'max_shops', 'max_registers', 'max_users', 'max_products',
+                'features',
+                'is_featured', 'is_contact_sales', 'is_custom',
+                'allowed_countries', 'sort_order',
+            ]);
+
+        return response()->json(['data' => $plans]);
+    }
+
+    /**
+     * POST /api/public/demo-request
+     * Stores a new demo/sales request from the landing page.
+     */
+    public function demoRequest(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|max:255',
+            'phone'         => 'nullable|string|max:50',
+            'business_name' => 'nullable|string|max:255',
+            'business_type' => 'nullable|string|max:100',
+            'country'       => 'nullable|string|max:5',
+            'message'       => 'nullable|string|max:2000',
+        ]);
+
+        $demo = DemoRequest::create([
+            ...$validated,
+            'ip_address' => $request->ip(),
+            'status'     => 'new',
+        ]);
+
+        // TODO: Fire DemoRequestReceived event to notify super admin via email/notification
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Thanks! Our team will reach out within 24 hours.',
+            'id'      => $demo->id,
+        ], 201);
+    }
+
+    /**
+     * GET /api/public/demo-requests  (super admin only — via Sanctum)
+     * List all demo requests for super admin dashboard.
+     */
+    public function demoRequestList(Request $request): JsonResponse
+    {
+        $query = DemoRequest::query()->latest();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                  ->orWhere('email', 'like', "%{$s}%")
+                  ->orWhere('business_name', 'like', "%{$s}%");
+            });
+        }
+
+        $data = $query->paginate($request->get('per_page', 20));
+        return response()->json($data);
+    }
+
+    /**
+     * PATCH /api/public/demo-requests/{id}  (super admin only)
+     */
+    public function demoRequestUpdate(Request $request, int $id): JsonResponse
+    {
+        $demo = DemoRequest::findOrFail($id);
+        $validated = $request->validate([
+            'status'       => 'sometimes|in:new,contacted,converted,closed',
+            'notes'        => 'sometimes|nullable|string|max:5000',
+            'contacted_at' => 'sometimes|nullable|date',
+            'assigned_to'  => 'sometimes|nullable|integer',
+        ]);
+        $demo->update($validated);
+        return response()->json(['success' => true, 'data' => $demo]);
+    }
+}

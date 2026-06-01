@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: noovapos:latest
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - mysql
+      - redis
+    ports:
+      - "80:80"
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-public-uploads:/var/www/html/public/uploads
+    networks:
+      - noovapos
+
+  mysql:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secret}
+      MYSQL_DATABASE: ${DB_DATABASE:-noovapos}
+      MYSQL_USER: ${DB_USERNAME:-app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-app_pass}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - noovapos
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - noovapos
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_KEY:-changeme}
+      MEILI_ENV: production
+    volumes:
+      - meili-data:/meili_data
+    networks:
+      - noovapos
+
+volumes:
+  app-storage:
+  app-public-uploads:
+  mysql-data:
+  redis-data:
+  meili-data:
+
+networks:
+  noovapos:
+    driver: bridge

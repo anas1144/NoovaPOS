@@ -13,7 +13,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Landing page — public marketing page
 Route::get('/', function () {
+    return view('landing');
+})->name('landing');
+
+// React SPA catch-all — handles /login, /register, /dashboard, etc.
+// The React Router takes over from here.
+Route::get('/{any}', function () {
     return view('welcome');
-});
+})->where('any', '^(?!api).*$')->name('spa');
 

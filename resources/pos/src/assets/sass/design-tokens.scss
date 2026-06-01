@@ -1,0 +1,246 @@
+/* ==========================================================================
+   NoovaPOS — Design Tokens  (Dark Glassmorphism Default)
+   --------------------------------------------------------------------------
+   Dark glassmorphism is the DEFAULT. Light mode is the override.
+   Palette: bg #0b1326 · primary #2563eb · accent #4edea3 · glass blur 12px
+   ========================================================================== */
+
+:root {
+    /* ---- Brand palette ---- */
+    --np-primary:        #2563eb;
+    --np-primary-50:     rgba(37, 99, 235, 0.12);
+    --np-primary-100:    rgba(37, 99, 235, 0.20);
+    --np-primary-600:    #1d4ed8;
+    --np-primary-700:    #1e40af;
+
+    --np-accent:         #4edea3;
+    --np-accent-50:      rgba(78, 222, 163, 0.12);
+    --np-accent-glow:    rgba(78, 222, 163, 0.30);
+
+    --np-gradient:       linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+    --np-gradient-card:  linear-gradient(135deg, rgba(37,99,235,0.15) 0%, rgba(56,189,248,0.08) 100%);
+
+    --np-success:        #22c55e;
+    --np-success-50:     rgba(34, 197, 94, 0.12);
+    --np-warning:        #f59e0b;
+    --np-warning-50:     rgba(245, 158, 11, 0.12);
+    --np-danger:         #ef4444;
+    --np-danger-50:      rgba(239, 68, 68, 0.12);
+    --np-info:           #38bdf8;
+    --np-info-50:        rgba(56, 189, 248, 0.12);
+
+    /* ---- Dark glassmorphism neutral palette ---- */
+    --np-bg:             #0b1326;
+    --np-bg-2:           #0d1630;
+    --np-surface:        rgba(255, 255, 255, 0.04);
+    --np-surface-solid:  #111d38;
+    --np-surface-alt:    rgba(255, 255, 255, 0.06);
+    --np-surface-hover:  rgba(255, 255, 255, 0.08);
+    --np-border:         rgba(255, 255, 255, 0.10);
+    --np-border-strong:  rgba(255, 255, 255, 0.18);
+    --np-divider:        rgba(255, 255, 255, 0.06);
+
+    --np-glass:          rgba(13, 22, 48, 0.72);
+    --np-glass-blur:     blur(12px);
+    --np-glass-border:   1px solid rgba(255, 255, 255, 0.10);
+
+    --np-text:           #e2e8f0;
+    --np-text-muted:     #94a3b8;
+    --np-text-subtle:    #64748b;
+    --np-text-inverse:   #0b1326;
+
+    /* ---- Typography scale ---- */
+    --np-font-sans:      'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --np-font-mono:      'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
+    --np-fs-xs:          0.75rem;
+    --np-fs-sm:          0.875rem;
+    --np-fs-base:        0.95rem;
+    --np-fs-md:          1rem;
+    --np-fs-lg:          1.125rem;
+    --np-fs-xl:          1.25rem;
+    --np-fs-2xl:         1.5rem;
+    --np-fs-3xl:         2rem;
+    --np-fs-display:     2.5rem;
+
+    /* ---- Spacing scale (4px base) ---- */
+    --np-space-0:        0;
+    --np-space-1:        0.25rem;
+    --np-space-2:        0.5rem;
+    --np-space-3:        0.75rem;
+    --np-space-4:        1rem;
+    --np-space-5:        1.25rem;
+    --np-space-6:        1.5rem;
+    --np-space-8:        2rem;
+    --np-space-10:       2.5rem;
+    --np-space-12:       3rem;
+    --np-space-16:       4rem;
+
+    /* ---- Radii ---- */
+    --np-radius-sm:      4px;
+    --np-radius:         8px;
+    --np-radius-md:      10px;
+    --np-radius-lg:      14px;
+    --np-radius-pill:    9999px;
+
+    /* ---- Elevation (dark-optimized) ---- */
+    --np-shadow-1:       0 1px 3px rgba(0, 0, 0, 0.40);
+    --np-shadow-2:       0 4px 16px rgba(0, 0, 0, 0.50);
+    --np-shadow-3:       0 12px 40px rgba(0, 0, 0, 0.60);
+    --np-shadow-pop:     0 24px 72px rgba(0, 0, 0, 0.70);
+    --np-shadow-glow:    0 0 24px rgba(37, 99, 235, 0.25);
+
+    /* ---- POS-specific ---- */
+    --pos-tile-bg:           rgba(255, 255, 255, 0.04);
+    --pos-tile-bg-hover:     rgba(37, 99, 235, 0.15);
+    --pos-tile-border:       rgba(255, 255, 255, 0.10);
+    --pos-cart-bg:           rgba(255, 255, 255, 0.03);
+
+    /* ---- KOT / table states ---- */
+    --state-free:        var(--np-success);
+    --state-occupied:    var(--np-danger);
+    --state-reserved:    var(--np-warning);
+    --state-billed:      var(--np-info);
+
+    /* ---- Motion ---- */
+    --np-ease:           cubic-bezier(.4, 0, .2, 1);
+    --np-dur-fast:       120ms;
+    --np-dur:            200ms;
+    --np-dur-slow:       320ms;
+}
+
+/* ==========================================================================
+   Light theme override  (dark is DEFAULT above)
+   ========================================================================== */
+[data-theme="light"] {
+    --np-primary:        #2563eb;
+    --np-primary-50:     #e8f1ff;
+    --np-primary-100:    #cfe2ff;
+
+    --np-bg:             #f4f6fa;
+    --np-bg-2:           #eef0f8;
+    --np-surface:        #ffffff;
+    --np-surface-solid:  #ffffff;
+    --np-surface-alt:    #f9fafb;
+    --np-surface-hover:  #f1f5f9;
+    --np-border:         #e4e6ef;
+    --np-border-strong:  #cbd5e1;
+    --np-divider:        #eef0f5;
+
+    --np-glass:          rgba(255, 255, 255, 0.85);
+    --np-glass-blur:     blur(12px);
+    --np-glass-border:   1px solid rgba(0, 0, 0, 0.08);
+
+    --np-text:           #1f2937;
+    --np-text-muted:     #6b7280;
+    --np-text-subtle:    #9ca3af;
+    --np-text-inverse:   #ffffff;
+
+    --np-shadow-1:       0 1px 2px rgba(15, 23, 42, 0.06);
+    --np-shadow-2:       0 4px 12px rgba(15, 23, 42, 0.08);
+    --np-shadow-3:       0 12px 32px rgba(15, 23, 42, 0.10);
+    --np-shadow-pop:     0 24px 64px rgba(15, 23, 42, 0.18);
+    --np-shadow-glow:    0 0 24px rgba(37, 99, 235, 0.12);
+
+    --pos-tile-bg:       #ffffff;
+    --pos-tile-bg-hover: #e8f1ff;
+    --pos-tile-border:   #e4e6ef;
+    --pos-cart-bg:       #f9fafb;
+}
+
+/* ==========================================================================
+   Global base
+   ========================================================================== */
+html, body, #root {
+    background-color: var(--np-bg);
+    color: var(--np-text);
+    font-family: var(--np-font-sans);
+    min-height: 100vh;
+}
+
+/* ==========================================================================
+   Glassmorphism utilities
+   ========================================================================== */
+.np-glass {
+    background: var(--np-glass);
+    backdrop-filter: var(--np-glass-blur);
+    -webkit-backdrop-filter: var(--np-glass-blur);
+    border: var(--np-glass-border);
+}
+
+.np-card {
+    background: var(--np-surface);
+    backdrop-filter: var(--np-glass-blur);
+    -webkit-backdrop-filter: var(--np-glass-blur);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius);
+    box-shadow: var(--np-shadow-2);
+    color: var(--np-text);
+    transition: box-shadow var(--np-dur) var(--np-ease),
+                border-color var(--np-dur) var(--np-ease);
+
+    &:hover {
+        border-color: var(--np-border-strong);
+        box-shadow: var(--np-shadow-3);
+    }
+}
+
+.np-card-solid {
+    background: var(--np-surface-solid);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius);
+    box-shadow: var(--np-shadow-2);
+    color: var(--np-text);
+}
+
+.np-btn-primary {
+    background: var(--np-gradient);
+    border: none;
+    color: #fff;
+    border-radius: var(--np-radius);
+    padding: 0.5rem 1.25rem;
+    font-weight: 600;
+    font-size: var(--np-fs-sm);
+    cursor: pointer;
+    transition: all var(--np-dur) var(--np-ease);
+    box-shadow: 0 0 16px rgba(37, 99, 235, 0.30);
+
+    &:hover {
+        box-shadow: 0 0 28px rgba(37, 99, 235, 0.55);
+        transform: translateY(-1px);
+    }
+}
+
+.np-stat {
+    background: var(--np-surface);
+    backdrop-filter: var(--np-glass-blur);
+    -webkit-backdrop-filter: var(--np-glass-blur);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-lg);
+    padding: var(--np-space-5) var(--np-space-6);
+    box-shadow: var(--np-shadow-2);
+    color: var(--np-text);
+    position: relative;
+    overflow: hidden;
+
+    .np-stat-label  { color: var(--np-text-muted); font-size: var(--np-fs-sm); }
+    .np-stat-value  { font-size: var(--np-fs-2xl); font-weight: 700; color: var(--np-text); }
+    .np-stat-up     { color: var(--np-success); }
+    .np-stat-down   { color: var(--np-danger); }
+}
+
+/* Helpers */
+.np-shadow-1    { box-shadow: var(--np-shadow-1); }
+.np-shadow-2    { box-shadow: var(--np-shadow-2); }
+.np-shadow-3    { box-shadow: var(--np-shadow-3); }
+.np-shadow-glow { box-shadow: var(--np-shadow-glow); }
+.np-rounded     { border-radius: var(--np-radius); }
+.np-rounded-lg  { border-radius: var(--np-radius-lg); }
+
+.text-np-muted   { color: var(--np-text-muted) !important; }
+.text-np-subtle  { color: var(--np-text-subtle) !important; }
+.text-np-accent  { color: var(--np-accent) !important; }
+.bg-np-surface   { background: var(--np-surface) !important; }
+.bg-np-bg        { background: var(--np-bg) !important; }
+.bg-np-gradient  { background: var(--np-gradient) !important; }
+.border-np       { border: 1px solid var(--np-border) !important; }
+.border-np-strong{ border: 1px solid var(--np-border-strong) !important; }

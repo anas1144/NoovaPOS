@@ -29,7 +29,7 @@ class TenancyServiceProvider extends ServiceProvider
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
-                    // Jobs\SeedDatabase::class,
+                    Jobs\SeedDatabase::class,
 
                     // Your own jobs to prepare the tenant.
                     // Provision API keys, create S3 buckets, anything you want!
@@ -102,7 +102,7 @@ class TenancyServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->bootEvents();
-        // $this->mapRoutes();
+        $this->mapRoutes();
 
         $this->makeTenancyMiddlewareHighestPriority();
     }
@@ -122,14 +122,12 @@ class TenancyServiceProvider extends ServiceProvider
 
     protected function mapRoutes()
     {
-        if (file_exists(base_path('routes/tenant.php'))) {
-        }
-        // $this->app->booted(function () {
-        //     if (file_exists(base_path('routes/tenant.php'))) {
-        //         Route::namespace(static::$controllerNamespace)
-        //             ->group(base_path('routes/tenant.php'));
-        //     }
-        // });
+        $this->app->booted(function () {
+            if (file_exists(base_path('routes/tenant.php'))) {
+                Route::namespace(static::$controllerNamespace)
+                    ->group(base_path('routes/tenant.php'));
+            }
+        });
     }
 
     protected function makeTenancyMiddlewareHighestPriority()

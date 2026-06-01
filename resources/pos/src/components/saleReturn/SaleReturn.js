@@ -56,7 +56,7 @@ const SaleReturn = (props) => {
 
     const goToEdit = (item) => {
         const id = item.id;
-        window.location.href = "#/app/sale-return/edit/" + id;
+        navigate('/app/sale-return/edit/' + id);
     };
 
     const onClickDeleteModel = (isDelete = null) => {
@@ -85,7 +85,7 @@ const SaleReturn = (props) => {
     };
 
     const goToDetailScreen = (id) => {
-        window.location.href = "#/app/sale-return/detail/" + id;
+        navigate('/app/sale-return/detail/' + id);
     };
 
     const itemsValue =

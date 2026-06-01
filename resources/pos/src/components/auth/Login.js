@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Image } from "react-bootstrap-v5";
@@ -16,6 +16,22 @@ import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { fetchFrontCms } from "../../store/action/frontCmsAction";
 import Cookies from "js-cookie";
 
+// Detect subdomain context — works for noovapos.local, noovapos.com, localhost, etc.
+function detectSubdomain() {
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+    // superadmin.noovapos.local  → parts = ['superadmin', 'noovapos', 'local']
+    // acme.noovapos.com          → parts = ['acme', 'noovapos', 'com']
+    // noovapos.local / localhost → parts.length <= 2
+    if (parts.length >= 3) {
+        const sub = parts[0].toLowerCase();
+        if (sub === 'superadmin') return { type: 'superadmin', subdomain: 'superadmin' };
+        return { type: 'tenant', subdomain: sub };
+    }
+    // plain domain or localhost — treat as super-admin entry point
+    return { type: 'main', subdomain: null };
+}
+
 const Login = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
@@ -24,6 +40,7 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false);
     const token = Cookies.get("authToken");
+    const subdomainCtx = useMemo(() => detectSubdomain(), []);
 
     const [loginInputs, setLoginInputs] = useState({
         email: "",
@@ -127,6 +144,19 @@ const Login = () => {
                         </a>
                     </div>
                     <div className="bg-theme-white rounded-15 shadow-md width-540 px-5 px-sm-7 py-10 mx-auto">
+                        {/* Subdomain context badge */}
+                        {subdomainCtx.type === 'tenant' && (
+                            <div className="alert alert-info py-2 px-3 mb-4 d-flex align-items-center gap-2 rounded-3" style={{ fontSize: '0.85rem' }}>
+                                <i className="bi bi-building me-1" />
+                                <span>Signing in to <strong>{subdomainCtx.subdomain}</strong> workspace</span>
+                            </div>
+                        )}
+                        {subdomainCtx.type === 'superadmin' && (
+                            <div className="alert alert-warning py-2 px-3 mb-4 d-flex align-items-center gap-2 rounded-3" style={{ fontSize: '0.85rem' }}>
+                                <i className="bi bi-shield-lock me-1" />
+                                <span><strong>Super Admin</strong> access</span>
+                            </div>
+                        )}
                         <h1 className="text-dark text-center mb-7">
                             {getFormattedMessage("login-form.title")}
                         </h1>
@@ -223,6 +253,20 @@ const Login = () => {
                                     )}
                                 </button>
                             </div>
+                            {/* Only show registration link on main domain / superadmin entry point */}
+                            {(subdomainCtx.type === 'main' || subdomainCtx.type === 'superadmin') && (
+                                <div className="text-center mt-4">
+                                    <span className="text-muted">
+                                        New to Noova POS?{" "}
+                                    </span>
+                                    <Link
+                                        to="/register-tenant"
+                                        className="text-primary fw-semibold text-decoration-none"
+                                    >
+                                        Create a tenant account
+                                    </Link>
+                                </div>
+                            )}
                         </form>
                     </div>
                 </div>

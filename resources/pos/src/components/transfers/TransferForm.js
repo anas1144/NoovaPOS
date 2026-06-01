@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { connect, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate, Link} from 'react-router-dom';
 import moment from 'moment';
 import { InputGroup, Table } from 'react-bootstrap-v5';
 import { editTransfer, postTransfer } from '../../store/action/transfersAction';
@@ -463,9 +463,9 @@ const TransferForm = ( props ) => {
                                 {isPosting ? getFormattedMessage("globally.post.posting") || "Posting..." : getFormattedMessage("globally.post.button") || "Post Transfer"}
                             </button>
                         )}
-                        <a href="#/app/transfers" className="btn btn-secondary">
+                        <Link to="/app/transfers" className="btn btn-secondary">
                             {getFormattedMessage("globally.cancel-btn")}
-                        </a>
+                        </Link>
                     </div>
                 </div>
                 {/*</Form>*/}

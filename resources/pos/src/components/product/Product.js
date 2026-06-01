@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import moment from "moment";
@@ -23,6 +24,7 @@ import { productExcelAction } from "../../store/action/productExcelAction";
 import { Permissions } from "../../constants";
 
 const Product = (props) => {
+    const navigate = useNavigate();
     const {
         fetchAllMainProducts,
         products,
@@ -68,11 +70,11 @@ const Product = (props) => {
 
     const goToEditProduct = (item) => {
         const id = item.id;
-        window.location.href = "#/app/products/edit/" + id;
+        navigate('/app/products/edit/' + id);
     };
 
     const goToProductDetailPage = (ProductId) => {
-        window.location.href = "#/app/products/detail/" + ProductId;
+        navigate('/app/products/detail/' + ProductId);
     };
 
     const currencySymbol =

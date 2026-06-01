@@ -84,6 +84,8 @@ class AuthController extends AppBaseController
             return $this->sendError(__('messages.error.invalid_username_password'), 422);
         }
         $userPermissions = $user->getAllPermissions()->pluck('name')->toArray();
+        // Capture role name BEFORE unsetting relations (prevents "roles[0]" crash)
+        $userRole = $user->getRoleNames()->first() ?? '';
         unset($user->roles);
         unset($user->permissions);
         $token = $user->createToken('token')->plainTextToken;
@@ -95,7 +97,7 @@ class AuthController extends AppBaseController
                 'user' => $user,
                 'expires_at' => config('sanctum.expiration'),
                 'permissions' => $userPermissions,
-                'roles' => $user->roles[0]->name,
+                'roles' => $userRole,
             ],
             'message' => 'Logged in successfully.',
         ]);

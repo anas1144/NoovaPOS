@@ -232,25 +232,25 @@ class StoreRepository extends BaseRepository
                 SmsTemplate::create($smsTemplate);
             }
 
-            // Customer
+            // Walk-in customer (default for POS)
             $customer = Customer::create([
                 'tenant_id' => $tenantId,
-                'name' => 'walk-in-customer',
-                'email' => 'customer+' . $tenantId . '@nexus-gls.com',
-                'phone' => '123456789',
-                'country' => 'india',
-                'city' => 'mumbai',
-                'address' => 'Dr Deshmukh Marg , mumbai',
+                'name'      => 'Walk-in Customer',
+                'email'     => 'walkin+' . $tenantId . '@noovapos.com',
+                'phone'     => '0000000000',
+                'country'   => 'PK',
+                'city'      => 'Karachi',
+                'address'   => 'Walk-in',
             ]);
-            // Warehouse
+            // Default warehouse
             $warehouse = Warehouse::create([
                 'tenant_id' => $tenantId,
-                'name' => 'warehouse',
-                'phone' => '123456789',
-                'country' => 'india',
-                'city' => 'mumbai',
-                'email' => 'warehouse+' . $tenantId . '@nexus-gls.com',
-                'zip_code' => '12345',
+                'name'      => 'Main Warehouse',
+                'phone'     => '0000000000',
+                'country'   => 'PK',
+                'city'      => 'Karachi',
+                'email'     => 'warehouse+' . $tenantId . '@noovapos.com',
+                'zip_code'  => '75000',
             ]);
 
             $setting = [
@@ -287,22 +287,28 @@ class StoreRepository extends BaseRepository
 
             $defaultSettings = $defaultSettingsQuery->pluck('value', 'key')->toArray();
 
+            // Ensure at least USD currency exists so Currency::first() never returns null
+            $defaultCurrency = Currency::first();
+            if (! $defaultCurrency) {
+                $defaultCurrency = Currency::create(['name' => 'US Dollar', 'code' => 'USD', 'symbol' => '$']);
+            }
+
             $settings = [
-                'currency' => $defaultSettings['currency'] ?? Currency::first()->id,
-                'email' => $defaultSettings['email'] ?? 'info@nexus-gls.com',
-                // 'company_name' => $defaultSettings['company_name'] ?? 'NexusPos',
+                'currency' => $defaultSettings['currency'] ?? $defaultCurrency->id,
+                'email' => $defaultSettings['email'] ?? 'info@noovapos.com',
+                // 'company_name' => $defaultSettings['company_name'] ?? 'NoovaPos',
                 'phone' => $defaultSettings['phone'] ?? '123456789',
-                'developed' => $defaultSettings['developed'] ?? 'nexus-gls.com',
-                'footer' => $defaultSettings['footer'] ?? 'nexus-gls.com',
+                'developed' => $defaultSettings['developed'] ?? 'noovapos.com',
+                'footer' => $defaultSettings['footer'] ?? 'noovapos.com',
                 'default_language' => $defaultSettings['default_language'] ?? 'en',
                 'default_customer' => $customer->id,
                 'default_warehouse' => $warehouse->id,
-                'address' => $defaultSettings['address'] ?? 'NexusPos',
+                'address' => $defaultSettings['address'] ?? 'NoovaPos',
                 'show_version_on_footer' => $defaultSettings['show_version_on_footer'] ?? '1',
-                'country' => $defaultSettings['country'] ?? 'India',
-                'state' => $defaultSettings['state'] ?? 'Gujarat',
-                'city' => $defaultSettings['city'] ?? 'Surat',
-                'postcode' => $defaultSettings['postcode'] ?? '12345',
+                'country' => $defaultSettings['country'] ?? 'PK',
+                'state' => $defaultSettings['state'] ?? 'Sindh',
+                'city' => $defaultSettings['city'] ?? 'Karachi',
+                'postcode' => $defaultSettings['postcode'] ?? '75000',
                 'date_format' => $defaultSettings['date_format'] ?? 'y-m-d',
                 'purchase_code' => $defaultSettings['purchase_code'] ?? 'PU',
                 'purchase_return_code' => $defaultSettings['purchase_return_code'] ?? 'PR',

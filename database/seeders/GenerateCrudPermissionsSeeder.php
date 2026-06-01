@@ -83,7 +83,10 @@ class GenerateCrudPermissionsSeeder extends Seeder
             foreach ($modules as $module) {
                 $managePermission = "manage_{$module}";
 
-                if ($role->hasPermissionTo($managePermission)) {
+                // Use the already-loaded collection instead of Spatie's hasPermissionTo(),
+                // which throws PermissionDoesNotExist when the permission row is absent
+                // (e.g. on a fresh migrate before db:seed has run).
+                if ($role->permissions->contains('name', $managePermission)) {
                     if (in_array($module, $viewOnlyModules)) {
                         $actions = ['view'];
                     } elseif (in_array($module, $editOnlyModules)) {

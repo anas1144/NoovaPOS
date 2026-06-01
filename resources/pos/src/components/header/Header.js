@@ -90,7 +90,7 @@ const Header = (props) => {
     };
 
     const onProfileClick = () => {
-        window.location.href = '#/app/profile/edit';
+        navigate('/app/profile/edit');
     };
 
     const fullScreen = () => {

@@ -16,10 +16,14 @@ return [
      *
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
-    'central_domains' => [
+    'central_domains' => array_filter(array_unique([
         '127.0.0.1',
         'localhost',
-    ],
+        // Main marketing + super-admin login domain
+        env('CENTRAL_DOMAIN', 'noovapos.local'),
+        // Dedicated super-admin subdomain  (superadmin.noovapos.local)
+        'superadmin.' . env('CENTRAL_DOMAIN', 'noovapos.local'),
+    ])),
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.
@@ -184,7 +188,9 @@ return [
      */
     'migration_parameters' => [
         '--force' => true, // This needs to be true to run migrations in production.
-        '--path' => [database_path('migrations/tenant')],
+        '--path' => is_dir(database_path('migrations/tenant'))
+            ? [database_path('migrations/tenant')]
+            : [database_path('migrations')],
         '--realpath' => true,
     ],
 
@@ -192,7 +198,7 @@ return [
      * Parameters used by the tenants:seed command.
      */
     'seeder_parameters' => [
-        '--class' => 'DatabaseSeeder', // root seeder class
+        '--class' => 'TenantDatabaseSeeder',
         // '--force' => true,
     ],
 ];

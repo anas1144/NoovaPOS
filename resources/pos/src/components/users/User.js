@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {connect} from 'react-redux';
-import {Link} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import moment from 'moment';
 import MasterLayout from '../MasterLayout';
 import ReactDataTable from '../../shared/table/ReactDataTable';
@@ -17,6 +17,7 @@ import { Permissions } from '../../constants';
 import ChangeUserPassword from '../auth/change-password/ChangeUserPassword';
 
 const User = (props) => {
+    const navigate = useNavigate();
     const {users, fetchUsers, totalRecord, isLoading, allConfigData, isCallFetchDataApi, stores} = props;
     const [deleteModel, setDeleteModel] = useState(false);
     const [isDelete, setIsDelete] = useState(null);
@@ -58,7 +59,7 @@ const User = (props) => {
 
     const goToEdit = (item) => {
         const id = item.id;
-        window.location.href = '#/app/users/edit/' + id;
+        navigate('/app/users/edit/' + id);
     };
 
     const goToChangePassword = (item) => {

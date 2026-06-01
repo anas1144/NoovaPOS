@@ -11,130 +11,76 @@ use Illuminate\Database\Seeder;
 class SettingTableSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Seeds the default data needed for ANY context (central or tenant).
+     * Safe to re-run — all creates are guarded by existence checks.
      */
     public function run(): void
     {
-        Customer::Create([
-            'name' => 'walk-in-customer',
-            'email' => 'customer@nexus-gls.com',
-            'phone' => '123456789',
-            'country' => 'US',
-            'city' => 'New York',
-            'address' => 'Dr Deshmukh Marg , mumbai',
-        ]);
-        Warehouse::create([
-            'name' => 'warehouse',
-            'phone' => '123456789',
-            'country' => 'USA',
-            'city' => 'New York',
-            'email' => 'warehouse1@nexus-gls.com',
-            'zip_code' => '12345',
-        ]);
-
-        Currency::create([
-            'name' => 'USA',
-            'code' => 'USD',
-            'symbol' => '₹',
-        ]);
-        $logoUrl = ('images/nexus.png');
-
-        if (! keyExist('currency')) {
-            Setting::create(['key' => 'currency', 'value' => '1']);
-        }
-
-        if (! keyExist('email')) {
-            Setting::create(['key' => 'email', 'value' => 'support@nexus-gls.com']);
-        }
-
-        if (! keyExist('company_name')) {
-            Setting::create(['key' => 'company_name', 'value' => 'nexus-pos']);
-        }
-
-        if (! keyExist('phone')) {
-            Setting::create(['key' => 'phone', 'value' => '1234567890']);
-        }
-
-        if (! keyExist('developed')) {
-            Setting::create(['key' => 'developed', 'value' => '']);
-        }
-
-        if (! keyExist('footer')) {
-            Setting::create([
-                'key' => 'footer', 'value' => '',
+        // Walk-in customer
+        if (! Customer::where('email', 'walkin@noovapos.com')->exists()) {
+            Customer::create([
+                'name'    => 'Walk-in Customer',
+                'email'   => 'walkin@noovapos.com',
+                'phone'   => '0000000000',
+                'country' => 'PK',
+                'city'    => 'Karachi',
+                'address' => 'Walk-in',
             ]);
         }
 
-        if (! keyExist('default_language')) {
-            Setting::create(['key' => 'default_language', 'value' => '1']);
-        }
-
-        if (! keyExist('default_customer')) {
-            Setting::create(['key' => 'default_customer', 'value' => '1']);
-        }
-
-        if (! keyExist('default_warehouse')) {
-            Setting::create(['key' => 'default_warehouse', 'value' => '1']);
-        }
-
-        if (! keyExist('address')) {
-            Setting::create([
-                'key' => 'address', 'value' => 'C-303, Atlanta Shopping Mall, Nr. Sudama Chowk, Mota Varachha, Surat, Gujarat, India.',
+        // Default warehouse
+        if (! Warehouse::where('email', 'warehouse@noovapos.com')->exists()) {
+            Warehouse::create([
+                'name'     => 'Main Warehouse',
+                'phone'    => '0000000000',
+                'country'  => 'PK',
+                'city'     => 'Karachi',
+                'email'    => 'warehouse@noovapos.com',
+                'zip_code' => '75000',
             ]);
         }
 
-        if (! keyExist('stripe_key')) {
-            Setting::create(['key' => 'stripe_key', 'value' => 'pu_test_yBzA1qI1PcfRBAVn1vJG2VuS00HcyhQX9LASERTFDDS']);
+        // USD currency  — symbol MUST be $ not ₹
+        if (! Currency::where('code', 'USD')->exists()) {
+            Currency::create(['name' => 'US Dollar', 'code' => 'USD', 'symbol' => '$']);
         }
 
-        if (! keyExist('stripe_secret')) {
-            Setting::create(['key' => 'stripe_secret',
-                'value' => 'pu_test_yBzA1qI1PcfRBAVn1vJG2VuS00HcyhQX9LASERTFDDS',
-            ]);
+        // PKR currency
+        if (! Currency::where('code', 'PKR')->exists()) {
+            Currency::create(['name' => 'Pakistani Rupee', 'code' => 'PKR', 'symbol' => '₨']);
         }
 
-        //sms configurations
+        $logo = 'images/noovapos.png';
 
-        if (! keyExist('sms_gateway')) {
-            Setting::create(['key' => 'sms_gateway', 'value' => '1']);
-        }
+        $defaults = [
+            'currency'          => '1',
+            'email'             => 'support@noovapos.com',
+            'company_name'      => 'NoovaPOS',
+            'phone'             => '+92 300 0000000',
+            'developed'         => '',
+            'footer'            => '',
+            'default_language'  => '1',
+            'default_customer'  => '1',
+            'default_warehouse' => '1',
+            'address'           => 'Karachi, Pakistan',
+            'stripe_key'        => '',
+            'stripe_secret'     => '',
+            'sms_gateway'       => '1',
+            'twillo_sid'        => '',
+            'twillo_token'      => '',
+            'twillo_from'       => '',
+            'smtp_host'         => 'smtp.mailtrap.io',
+            'smtp_port'         => '2525',
+            'smtp_username'     => '',
+            'smtp_password'     => '',
+            'smtp_Encryption'   => 'tls',
+            'logo'              => $logo,
+        ];
 
-        if (! keyExist('twillo_sid')) {
-            Setting::create(['key' => 'twillo_sid', 'value' => 'asd']);
-        }
-
-        if (! keyExist('twillo_token')) {
-            Setting::create(['key' => 'twillo_token', 'value' => 'asd']);
-        }
-
-        if (! keyExist('twillo_from')) {
-            Setting::create(['key' => 'twillo_from', 'value' => 'asd']);
-        }
-
-        // smtm configurations
-
-        if (! keyExist('smtp_host')) {
-            Setting::create(['key' => 'smtp_host', 'value' => 'mailtrap.io']);
-        }
-
-        if (! keyExist('smtp_port')) {
-            Setting::create(['key' => 'smtp_port', 'value' => '2525']);
-        }
-
-        if (! keyExist('smtp_username')) {
-            Setting::create(['key' => 'smtp_username', 'value' => 'test']);
-        }
-
-        if (! keyExist('smtp_password')) {
-            Setting::create(['key' => 'smtp_password', 'value' => 'test']);
-        }
-
-        if (! keyExist('smtp_Encryption')) {
-            Setting::create(['key' => 'smtp_Encryption', 'value' => 'tls']);
-        }
-
-        if (! keyExist('logo')) {
-            Setting::create(['key' => 'logo', 'value' => $logoUrl]);
+        foreach ($defaults as $key => $value) {
+            if (! keyExist($key)) {
+                Setting::create(['key' => $key, 'value' => $value]);
+            }
         }
     }
 }

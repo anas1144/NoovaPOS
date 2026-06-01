@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from "react";
 import moment from "moment";
 import { connect } from "react-redux";
@@ -20,6 +21,7 @@ import { quotationPdfAction } from "../../store/action/quotationPdfAction";
 import { Permissions } from "../../constants";
 
 const Quotations = (props) => {
+    const navigate = useNavigate();
     const {
         totalRecord,
         isLoading,
@@ -46,7 +48,7 @@ const Quotations = (props) => {
     //quotation edit function
     const goToEdit = (item) => {
         const id = item.id;
-        window.location.href = "#/app/quotations/edit/" + id;
+        navigate('/app/quotations/edit/' + id);
     };
 
     // delete quotation function
@@ -58,12 +60,12 @@ const Quotations = (props) => {
     //quotation sale create function
     const onCreateSaleClick = (item) => {
         const id = item.id;
-        window.location.href = "#/app/quotations/Create_sale/" + id;
+        navigate('/app/quotations/Create_sale/' + id);
     };
 
     //quotation details function
     const goToDetailScreen = (ProductId) => {
-        window.location.href = "#/app/quotations/detail/" + ProductId;
+        navigate('/app/quotations/detail/' + ProductId);
     };
 
     //onClick pdf function

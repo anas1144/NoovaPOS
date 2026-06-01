@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {useNavigate, Link} from 'react-router-dom';
 import moment from "moment";
 import { connect, useDispatch } from "react-redux";
 import { fetchProductsByWarehouse } from "../../store/action/productAction";
@@ -286,9 +286,9 @@ const AdjustmentForm = (props) => {
                                 {isPosting ? getFormattedMessage("globally.post.posting") || "Posting..." : getFormattedMessage("globally.post.button") || "Post Adjustment"}
                             </button>
                         )}
-                        <a href="#/app/adjustments" className="btn btn-secondary">
+                        <Link to="/app/adjustments" className="btn btn-secondary">
                             {getFormattedMessage("globally.cancel-btn")}
-                        </a>
+                        </Link>
                     </div>
                 </div>
                 {/*</Form>*/}

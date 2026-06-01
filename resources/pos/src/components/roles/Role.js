@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useState } from "react";
 import { connect } from "react-redux";
 import MasterLayout from "../MasterLayout";
@@ -16,6 +17,7 @@ import TopProgressBar from "../../shared/components/loaders/TopProgressBar";
 import { Permissions } from "../../constants";
 
 const Role = (props) => {
+    const navigate = useNavigate();
     const { roles, fetchRoles, totalRecord, isLoading, allConfigData, isCallFetchDataApi } = props;
     const [deleteModel, setDeleteModel] = useState(false);
     const [isDelete, setIsDelete] = useState(null);
@@ -42,7 +44,7 @@ const Role = (props) => {
 
     const goToEdit = (item) => {
         const id = item.id;
-        window.location.href = "#/app/roles/edit/" + id;
+        navigate('/app/roles/edit/' + id);
     };
 
     const columns = [

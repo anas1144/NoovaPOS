@@ -53,7 +53,7 @@ const Adjustments = (props) => {
     //adjustments edit function
     const goToEdit = (item) => {
         const id = item.id;
-        window.location.href = "#/app/adjustments/" + id;
+        navigate('/app/adjustments/' + id);
     };
 
     // post adjustment function

@@ -182,7 +182,7 @@ const ThisWeekSalePurchaseChart = (props) => {
                                 title={<FontAwesomeIcon icon={faBars} />}
                             >
                                 <NavDropdown.Item
-                                    href="#/"
+                                    href="/"
                                     onClick={() => isSetLineChart(false)}
                                     className={`${
                                         isLineChart === true

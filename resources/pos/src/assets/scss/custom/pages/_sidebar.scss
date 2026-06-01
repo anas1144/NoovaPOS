@@ -1,7 +1,10 @@
 @import "../../components/variables";
 @import "../../base/mixin";
-@import '~react-pro-sidebar/dist/scss/styles';
+@import 'react-pro-sidebar/dist/scss/styles';
 
+/* ============================================================
+   NoovaPOS Sidebar — Dark Glassmorphism
+   ============================================================ */
 .pro-sidebar {
     @media (min-width: 992px) {
         min-height: 100vh;
@@ -16,7 +19,10 @@
     }
 
     .pro-sidebar-inner {
-        background-color: $white !important;
+        background: rgba(11, 19, 38, 0.92) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 
         @media (max-width: 992px) {
             min-height: 100vh;
@@ -37,27 +43,30 @@
         .pro-menu-item {
             .pro-inner-item {
                 border-left: 0.313rem solid transparent;
-                transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+                transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
                 padding: 5px 20px 5px 18px;
                 font-size: .875rem;
+                color: #94a3b8;
 
                 &:hover {
-                    background-color: $primary-light;
-                    border-left: 0.313rem solid $primary !important;
+                    background: rgba(37, 99, 235, 0.12) !important;
+                    border-left: 0.313rem solid #2563eb !important;
+                    color: #e2e8f0;
 
                     svg, .pro-item-content a {
-                        color: $gray-900;
+                        color: #e2e8f0;
                     }
                 }
             }
 
             &.active {
                 .pro-inner-item {
-                    background-color: $primary-light;
-                    border-left: 0.313rem solid $primary !important;
+                    background: rgba(37, 99, 235, 0.18) !important;
+                    border-left: 0.313rem solid #2563eb !important;
+                    color: #e2e8f0;
 
                     svg, .pro-item-content a {
-                        color: $gray-900;
+                        color: #e2e8f0;
                     }
                 }
             }
@@ -67,7 +76,7 @@
                 margin-left: 0 !important;
 
                 .pro-icon {
-                    color: $gray-600;
+                    color: #64748b;
                     font-size: 0.875rem !important;
                     animation: unset !important;
                 }
@@ -75,14 +84,15 @@
 
             .pro-item-content {
                 a {
-                    color: $gray-600;
+                    color: #94a3b8;
+                    text-decoration: none;
+                    &:hover { color: #e2e8f0; }
                 }
             }
 
-
             .pro-inner-list-item {
                 position: relative;
-                background-color: transparent !important;
+                background: rgba(0,0,0,0.15) !important;
                 padding: 0px !important;
             }
             .pro-inner-list-item ul {
@@ -93,7 +103,7 @@
                 padding: 10px 43px 10px 43px !important;
             }
             span.pro-item-content{
-                color: $gray-600;
+                color: #94a3b8;
             }
             .pro-inner-list-item ul span.pro-item-content{
                 padding-left: 10px !important;
@@ -101,14 +111,13 @@
         }
 
         .pro-menu-item.pro-sub-menu.pro-active-sub  > div > .pro-item-content{
-            // background-color: $primary-light;
-            color: $primary !important;
+            color: #2563eb !important;
         }
         .pro-menu-item.pro-sub-menu.pro-active-sub  > div.pro-inner-item{
-            border-left: 0.313rem solid $primary !important;
+            border-left: 0.313rem solid #2563eb !important;
         }
         .pro-menu-item.pro-sub-menu.pro-active-sub-search  > div{
-            background-color: $primary-light;
+            background: rgba(37, 99, 235, 0.12) !important;
         }
 
     }
@@ -117,17 +126,20 @@
 
 .pro-sidebar.collapsed .pro-menu>ul>.pro-menu-item.pro-sub-menu:hover{
     .react-slidedown.pro-inner-list-item{
-        transition: visibility,transform .3s;
+        transition: visibility, transform .3s;
         position: fixed;
         left: 82px;
         margin: 0px;
         display: block !important;
-        color: $gray-600;
-        background-color: white !important;
-        border-radius: 5px;
+        color: #94a3b8;
+        background: rgba(11, 19, 38, 0.96) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255,255,255,0.10) !important;
+        border-radius: 8px;
         margin-top: -44px;
-        box-shadow: 0 4px 20px 1px rgb(0 0 0 / 6%), 0 1px 4px rgb(0 0 0 / 8%) !important;
-        }
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+    }
 }
 
 .react-slidedown {

@@ -12,6 +12,7 @@ use App\Models\State;
 use App\Models\Store;
 use App\Models\Warehouse;
 use App\Repositories\SettingRepository;
+use App\Services\TenantCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -24,21 +25,52 @@ class SettingAPIController extends AppBaseController
     /** @var SettingRepository */
     private $settingRepository;
 
-    public function __construct(SettingRepository $productRepository)
-    {
+    public function __construct(
+        SettingRepository $productRepository,
+        private readonly TenantCacheService $tenantCache
+    ) {
         $this->settingRepository = $productRepository;
+    }
+
+    // ------------------------------------------------------------------
+    // Cache key constants
+    // ------------------------------------------------------------------
+    private const CK_SETTINGS_FULL  = 'settings.full_response';
+    private const CK_SETTINGS_FRONT = 'settings.front_response';
+    private const CK_SETTINGS_POS   = 'settings.pos_response';
+    private const CK_SETTINGS_DUAL  = 'settings.dual_screen';
+    private const TTL_SETTINGS       = 3600; // 1 hour
+
+    /** Flush every settings-related cache key for the current tenant. */
+    private function flushSettingsCache(): void
+    {
+        foreach ([
+            self::CK_SETTINGS_FULL,
+            self::CK_SETTINGS_FRONT,
+            self::CK_SETTINGS_POS,
+            self::CK_SETTINGS_DUAL,
+        ] as $key) {
+            $this->tenantCache->forget($key);
+        }
     }
 
     public function index(Request $request): JsonResponse
     {
-        $settings = Setting::all()->pluck('value', 'key')->toArray();
-        $settings['logo'] = getLogoUrl();
-        $settings['store_name'] = getActiveStoreName() ? getActiveStoreName() : ($settings['store_name'] ?? null);
-        $settings['add_stock_while_product_creation'] = isset($settings['add_stock_while_product_creation']) ? $settings['add_stock_while_product_creation'] : '1';
-        $settings['warehouse_name'] = Warehouse::whereId($settings['default_warehouse'])->first()->name ?? '';
-        $settings['customer_name'] = Customer::whereId($settings['default_customer'])->first()->name ?? '';
-        $settings['currency_symbol'] = Currency::whereId($settings['currency'])->first()->symbol ?? '';
-        $settings['countries'] = Country::all();
+        $settings = $this->tenantCache->remember(
+            self::CK_SETTINGS_FULL,
+            self::TTL_SETTINGS,
+            function () {
+                $s = Setting::all()->pluck('value', 'key')->toArray();
+                $s['logo']       = getLogoUrl();
+                $s['store_name'] = getActiveStoreName() ?: ($s['store_name'] ?? null);
+                $s['add_stock_while_product_creation'] = $s['add_stock_while_product_creation'] ?? '1';
+                $s['warehouse_name']  = Warehouse::whereId($s['default_warehouse'])->first()->name ?? '';
+                $s['customer_name']   = Customer::whereId($s['default_customer'])->first()->name ?? '';
+                $s['currency_symbol'] = Currency::whereId($s['currency'])->first()->symbol ?? '';
+                $s['countries']       = Country::all()->toArray();
+                return $s;
+            }
+        );
 
         return $this->sendResponse(
             new SettingResource(['type' => 'settings', 'attributes' => $settings]),
@@ -50,6 +82,9 @@ class SettingAPIController extends AppBaseController
     {
         $input = $request->all();
         $settings = $this->settingRepository->updateSettings($input);
+
+        // Flush all settings caches so next read picks up fresh data
+        $this->flushSettingsCache();
 
         return $this->sendResponse(
             new SettingResource(['type' => 'settings', 'attributes' => $settings]),
@@ -80,11 +115,18 @@ class SettingAPIController extends AppBaseController
             'show_app_name_in_sidebar'
         ];
         
-        $settings = Setting::whereIn('key', $keyName)->pluck('value', 'key')->toArray();
-        $settings['logo'] = getLogoUrl();
-        $settings['warehouse_name'] = Warehouse::whereId($settings['default_warehouse'])->first()->name ?? '';
-        $settings['customer_name'] = Customer::whereId($settings['default_customer'])->first()->name ?? '';
-        $settings['currency_symbol'] = Currency::whereId($settings['currency'])->first()->symbol ?? '';
+        $settings = $this->tenantCache->remember(
+            self::CK_SETTINGS_FRONT,
+            self::TTL_SETTINGS,
+            function () use ($keyName) {
+                $s = Setting::whereIn('key', $keyName)->pluck('value', 'key')->toArray();
+                $s['logo']            = getLogoUrl();
+                $s['warehouse_name']  = Warehouse::whereId($s['default_warehouse'])->first()->name ?? '';
+                $s['customer_name']   = Customer::whereId($s['default_customer'])->first()->name ?? '';
+                $s['currency_symbol'] = Currency::whereId($s['currency'])->first()->symbol ?? '';
+                return $s;
+            }
+        );
 
         return $this->sendResponse(
             new SettingResource(['type' => 'settings', 'value' => $settings]),
@@ -164,6 +206,7 @@ class SettingAPIController extends AppBaseController
     public function updateReceiptSetting(Request $request)
     {
         $settings = $this->settingRepository->updateReceiptSetting($request->all());
+        $this->flushSettingsCache();
 
         return $this->sendResponse(
             new SettingResource(['type' => 'settings', 'attributes' => $settings]),
@@ -173,18 +216,20 @@ class SettingAPIController extends AppBaseController
 
     public function getPosSettings(): JsonResponse
     {
-        $getArray = [
-            'enable_pos_click_audio',
-            'click_audio',
-            'show_pos_stock_product',
-        ];
-
-        $settings = Setting::whereIn('key', $getArray)->pluck('value', 'key')->toArray();
-        $settings['enable_pos_click_audio'] = $settings['enable_pos_click_audio'] ?? false;
-        if (!isset($settings['click_audio'])) {
-            $settings['click_audio'] = asset('images/click_audio.mp3');
-            Setting::updateOrCreate(['key' => 'click_audio'], ['value' => $settings['click_audio']]);
-        }
+        $settings = $this->tenantCache->remember(
+            self::CK_SETTINGS_POS,
+            self::TTL_SETTINGS,
+            function () {
+                $getArray = ['enable_pos_click_audio', 'click_audio', 'show_pos_stock_product'];
+                $s = Setting::whereIn('key', $getArray)->pluck('value', 'key')->toArray();
+                $s['enable_pos_click_audio'] = $s['enable_pos_click_audio'] ?? false;
+                if (!isset($s['click_audio'])) {
+                    $s['click_audio'] = asset('images/click_audio.mp3');
+                    Setting::updateOrCreate(['key' => 'click_audio'], ['value' => $s['click_audio']]);
+                }
+                return $s;
+            }
+        );
 
         return $this->sendResponse(
             new SettingResource(['type' => 'settings', 'attributes' => $settings]),
@@ -196,24 +241,26 @@ class SettingAPIController extends AppBaseController
     {
         $input = $request->all();
         $this->settingRepository->updatePosSettings($input);
+        $this->flushSettingsCache();
         return $this->sendSuccess(__('messages.success.pos_settings_updated'));
     }
 
     public function getDualScreenSettings(): JsonResponse
     {
-        $getArray = [
-            'dual_screen_header_text',
-            'dual_screen_images',
-        ];
+        $settings = $this->tenantCache->remember(
+            self::CK_SETTINGS_DUAL,
+            self::TTL_SETTINGS,
+            function () {
+                $getArray = ['dual_screen_header_text', 'dual_screen_images'];
+                $s = Setting::whereIn('key', $getArray)->pluck('value', 'key')->toArray();
+                $s['dual_screen_images']      = isset($s['dual_screen_images'])
+                    ? json_decode($s['dual_screen_images'], true)
+                    : [];
+                $s['dual_screen_header_text'] = $s['dual_screen_header_text'] ?? null;
+                return $s;
+            }
+        );
 
-        $settings = Setting::whereIn('key', $getArray)->pluck('value', 'key')->toArray();
-        if (isset($settings['dual_screen_images'])) {
-            $settings['dual_screen_images'] = json_decode($settings['dual_screen_images'], true);
-        } else {
-            $settings['dual_screen_images'] = [];
-        }
-        $settings['dual_screen_header_text'] = $settings['dual_screen_header_text'] ?? null;
-        
         return $this->sendResponse(
             new SettingResource(['type' => 'dual-screen', 'attributes' => $settings]),
             'POS Setting data retrieved successfully.'
@@ -224,6 +271,7 @@ class SettingAPIController extends AppBaseController
     {
         $input = $request->all();
         $this->settingRepository->updateDualScreenSettings($input);
+        $this->flushSettingsCache();
         return $this->sendSuccess(__('messages.success.dual_screen_settings_updated'));
     }
 

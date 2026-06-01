@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from "react";
 import MasterLayout from "../../MasterLayout";
 import TabTitle from "../../../shared/tab-title/TabTitle";
@@ -15,6 +16,7 @@ import { totalStockReportExcel } from "../../../store/action/totalStockReportExc
 import TopProgressBar from "../../../shared/components/loaders/TopProgressBar";
 
 const StockReport = (props) => {
+    const navigate = useNavigate();
     const {
         isLoading,
         totalRecord,
@@ -100,7 +102,7 @@ const StockReport = (props) => {
 
     const onReportsClick = (item) => {
         const id = item.id;
-        window.location.href = "#/app/report/report-detail-stock/" + id;
+        navigate('/app/report/report-detail-stock/' + id);
     };
 
     const columns = [

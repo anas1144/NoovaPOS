@@ -11,9 +11,12 @@ import { addRTLSupport } from "./shared/sharedMethod";
 import Login from "./components/auth/Login";
 import ResetPassword from "./components/auth/ResetPassword";
 import ForgotPassword from "./components/auth/ForgotPassword";
+import RegisterTenant from "./components/auth/RegisterTenant";
 import AdminApp from "./AdminApp";
 import { getFiles } from "./locales/index";
 import Cookies from "js-cookie";
+
+const cssFiles = import.meta.glob("./assets/css/*.css");
 
 function App() {
     //do not remove updateLanguag
@@ -27,7 +30,7 @@ function App() {
         (state) => state
     );
     const [allLocales, setAllLocales] = useState({});
-    const [messages, setMessages] = useState({});
+    const [messages, setMessages] = useState(() => getFiles()['en'] || {});
     const [userEditedMessage, setUserEditedMessage] = useState({});
     const updateLanguag =
         allLocales[updatedLanguage ? updatedLanguage : selectedLanguage];
@@ -152,26 +155,38 @@ function App() {
         selectCSS();
     }, [location.pathname]);
 
+    // Public paths that must never force-redirect to /login
+    const publicPaths = ["/", "/register-tenant", "/login"];
+
     useEffect(() => {
         const currentPath = location.pathname;
         if (token) {
             dispatch(fetchConfig());
             dispatch(fetchFrontSetting());
-        } else if (!currentPath.includes("/forgot-password") && !currentPath.includes("/reset-password")) {
+        } else if (
+            !publicPaths.some((p) => currentPath === p || currentPath.startsWith(p + "/")) &&
+            !currentPath.includes("/forgot-password") &&
+            !currentPath.includes("/reset-password")
+        ) {
             navigate("/login");
         }
     }, []);
 
     const selectCSS = () => {
-        if (updatedLanguage === "ar") {
-            require("./assets/css/custom.rtl.css");
-            require("./assets/css/style.rtl.css");
-            require("./assets/css/frontend.rtl.css");
-        } else {
-            require("./assets/css/custom.css");
-            require("./assets/css/style.css");
-            require("./assets/css/frontend.css");
-        }
+        const files =
+            updatedLanguage === "ar"
+                ? [
+                    "./assets/css/custom.rtl.css",
+                    "./assets/css/style.rtl.css",
+                    "./assets/css/frontend.rtl.css",
+                ]
+                : [
+                    "./assets/css/custom.css",
+                    "./assets/css/style.css",
+                    "./assets/css/frontend.css",
+                ];
+
+        files.forEach((file) => cssFiles[file]?.());
     };
 
     useEffect(() => {
@@ -186,6 +201,7 @@ function App() {
             >
                 <Routes>
                     <Route path="/login" element={<Login />} />
+                    <Route path="/register-tenant" element={<RegisterTenant />} />
                     <Route
                         path="reset-password/:token/:email"
                         element={<ResetPassword />}
@@ -207,7 +223,8 @@ function App() {
                             />
                         }
                     />
-                    <Route path="*" element={<Navigate replace to={"/"} />} />
+                    {/* Unknown routes: go to login (not back to /, which is the Blade landing) */}
+                    <Route path="*" element={<Navigate replace to={"/login"} />} />
                 </Routes>
                 <Toasts
                     language={

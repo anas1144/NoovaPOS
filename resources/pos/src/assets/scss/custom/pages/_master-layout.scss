@@ -1,14 +1,251 @@
 @import "../../components/variables";
 
+/* ============================================================
+   NoovaPOS Master Layout — Dark Glassmorphism
+   ============================================================ */
+
+/* Full-app background */
+body, html {
+    background-color: var(--np-bg, #0b1326) !important;
+    color: var(--np-text, #e2e8f0) !important;
+}
+
 .contents {
-    background: #eef0f8 !important;
+    background: var(--np-bg, #0b1326) !important;
+    min-height: 100vh;
+}
+
+/* Header bar */
+.header {
+    background: rgba(11, 19, 38, 0.85) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+    box-shadow: 0 1px 16px rgba(0, 0, 0, 0.40) !important;
+    color: var(--np-text, #e2e8f0) !important;
+}
+
+/* Main content area */
+.wrapper, .wrapper-res {
+    background: var(--np-bg, #0b1326) !important;
+}
+
+.content {
+    background: var(--np-bg, #0b1326) !important;
 }
 
 #root {
     display: flex;
     flex: 1;
     flex-direction: column;
+    background: var(--np-bg, #0b1326);
 }
+
+/* ---- Cards ---- */
+.card {
+    background: rgba(255, 255, 255, 0.04) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.40) !important;
+    color: var(--np-text, #e2e8f0) !important;
+}
+
+.card-header {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+    color: var(--np-text, #e2e8f0) !important;
+}
+
+.card-body {
+    color: var(--np-text, #e2e8f0) !important;
+}
+
+/* ---- Tables ---- */
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(255,255,255,0.025);
+    --bs-table-hover-bg: rgba(37,99,235,0.08);
+    --bs-table-border-color: rgba(255,255,255,0.07);
+    color: var(--np-text, #e2e8f0) !important;
+}
+
+.table thead th {
+    background: rgba(37, 99, 235, 0.08) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+    color: #94a3b8 !important;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+/* ---- Forms ---- */
+.form-control, .form-select {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    color: var(--np-text, #e2e8f0) !important;
+    border-radius: 8px !important;
+
+    &::placeholder { color: #64748b !important; }
+    &:focus {
+        background: rgba(255,255,255,0.07) !important;
+        border-color: rgba(37, 99, 235, 0.60) !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+        color: var(--np-text, #e2e8f0) !important;
+    }
+}
+
+.form-label { color: #94a3b8 !important; }
+
+.input-group-text {
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    color: #94a3b8 !important;
+}
+
+/* ---- Buttons ---- */
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%) !important;
+    border: none !important;
+    box-shadow: 0 0 16px rgba(37, 99, 235, 0.35) !important;
+    font-weight: 600;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+        box-shadow: 0 0 28px rgba(37, 99, 235, 0.55) !important;
+        transform: translateY(-1px);
+    }
+}
+
+.btn-secondary {
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    color: #94a3b8 !important;
+
+    &:hover {
+        background: rgba(255,255,255,0.12) !important;
+        color: #e2e8f0 !important;
+    }
+}
+
+.btn-light {
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    color: #e2e8f0 !important;
+
+    &:hover {
+        background: rgba(255,255,255,0.12) !important;
+    }
+}
+
+/* ---- Modal ---- */
+.modal-content {
+    background: rgba(13, 22, 48, 0.96) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.70) !important;
+    color: var(--np-text, #e2e8f0) !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+    color: var(--np-text, #e2e8f0) !important;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(255,255,255,0.07) !important;
+}
+
+/* ---- Dropdowns ---- */
+.dropdown-menu {
+    background: rgba(11, 19, 38, 0.96) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.60) !important;
+    color: var(--np-text, #e2e8f0) !important;
+}
+
+.dropdown-item {
+    color: #94a3b8 !important;
+    transition: all 0.15s ease;
+
+    &:hover, &:focus {
+        background: rgba(37, 99, 235, 0.12) !important;
+        color: #e2e8f0 !important;
+    }
+
+    &:active {
+        background: rgba(37, 99, 235, 0.20) !important;
+        color: #fff !important;
+    }
+}
+
+/* ---- Badges ---- */
+.badge {
+    &.bg-success { background: rgba(34, 197, 94, 0.18) !important; color: #22c55e !important; }
+    &.bg-danger  { background: rgba(239, 68, 68, 0.18) !important; color: #ef4444 !important; }
+    &.bg-warning { background: rgba(245, 158, 11, 0.18) !important; color: #f59e0b !important; }
+    &.bg-info    { background: rgba(56, 189, 248, 0.18) !important; color: #38bdf8 !important; }
+    &.bg-primary { background: rgba(37, 99, 235, 0.18) !important; color: #60a5fa !important; }
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.12);
+    border-radius: 99px;
+    &:hover { background: rgba(37, 99, 235, 0.50); }
+}
+
+/* ---- Breadcrumb ---- */
+.breadcrumb-item {
+    color: #64748b !important;
+    &.active { color: #94a3b8 !important; }
+    a { color: #2563eb !important; }
+}
+
+/* ---- Text color overrides ---- */
+.text-gray-600, .text-muted { color: #94a3b8 !important; }
+.text-gray-700, .text-gray-800, .text-gray-900 { color: #e2e8f0 !important; }
+h1, h2, h3, h4, h5, h6 { color: var(--np-text, #e2e8f0) !important; }
+
+/* ---- react-dataTable ---- */
+.rdt_Table { background: transparent !important; }
+.rdt_TableHead .rdt_TableHeadRow {
+    background: rgba(37, 99, 235, 0.07) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    color: #94a3b8 !important;
+}
+.rdt_TableRow {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    color: #e2e8f0 !important;
+    &:hover { background: rgba(37,99,235,0.07) !important; }
+}
+.rdt_Pagination {
+    background: transparent !important;
+    color: #94a3b8 !important;
+    border-top: 1px solid rgba(255,255,255,0.07) !important;
+}
+
+/* ---- Select (react-select) ---- */
+.css-13cymwt-control, .css-t3ipsp-control {
+    background: rgba(255,255,255,0.05) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+}
+.css-1nmdiq5-menu {
+    background: rgba(13, 22, 48, 0.98) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+}
+.css-d7l1ni-option { background: rgba(37,99,235,0.15) !important; }
+.css-tr4s17-option { background: rgba(37,99,235,0.25) !important; }
 
 .toolbar {
     padding: 0 !important;
