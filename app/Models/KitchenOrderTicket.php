@@ -24,6 +24,7 @@ class KitchenOrderTicket extends BaseModel
         'tenant_id',
         'store_id',
         'shop_id',
+        'kitchen_id',
         'table_id',
         'sale_id',
         'waiter_id',

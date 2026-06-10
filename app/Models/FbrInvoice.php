@@ -24,10 +24,14 @@ class FbrInvoice extends BaseModel
         'shop_id',
         'fbr_profile_id',
         'sale_id',
-        'invoice_no',
-        'fbr_invoice_no',
+        'invoice_no',          // Our internal USIN / order_number (pre-generated, printed immediately)
+        'fbr_invoice_no',      // Legacy alias — kept for backward compat
+        'fbr_invoice_number',  // FBR-assigned number returned by API (InvoiceNumber in response)
+        'fbr_code',            // FBR response Code (0 = success)
+        'fbr_response',        // FBR response message string
         'fbr_uuid',
         'fbr_qr_payload',
+        'fbr_pos_service_fee',
         'mode',
         'status',
         'total_amount',
@@ -42,17 +46,35 @@ class FbrInvoice extends BaseModel
     ];
 
     protected $casts = [
-        'request_payload' => 'array',
-        'response_payload' => 'array',
-        'submitted_at' => 'datetime',
-        'synced_at' => 'datetime',
-        'failed_at' => 'datetime',
-        'total_amount' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
+        'request_payload'    => 'array',
+        'response_payload'   => 'array',
+        'submitted_at'       => 'datetime',
+        'synced_at'          => 'datetime',
+        'failed_at'          => 'datetime',
+        'total_amount'       => 'decimal:2',
+        'tax_amount'         => 'decimal:2',
+        'fbr_pos_service_fee'=> 'boolean',
     ];
+
+    /** The number to print on the receipt — FBR number if synced, else internal USIN */
+    public function getPrintableInvoiceNumberAttribute(): string
+    {
+        return $this->fbr_invoice_number ?? $this->invoice_no ?? 'PENDING';
+    }
+
+    /** Whether FBR accepted this invoice */
+    public function isSynced(): bool
+    {
+        return $this->status === self::STATUS_SYNCED && $this->fbr_invoice_number !== null;
+    }
 
     public function profile(): BelongsTo
     {
         return $this->belongsTo(FbrProfile::class, 'fbr_profile_id');
+    }
+
+    public function sale(): BelongsTo
+    {
+        return $this->belongsTo(Sale::class, 'sale_id');
     }
 }

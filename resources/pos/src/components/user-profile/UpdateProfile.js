@@ -18,6 +18,8 @@ import {
 } from "../../shared/sharedMethod";
 import user from "../../assets/images/avatar.png";
 import TopProgressBar from "../../shared/components/loaders/TopProgressBar";
+import apiConfig from "../../config/apiConfig";
+import { apiBaseURL } from "../../constants";
 
 const UpdateProfile = () => {
     const { userProfile } = useSelector((state) => state);
@@ -31,8 +33,17 @@ const UpdateProfile = () => {
         last_name: "",
         email: "",
         phone: "",
+        country: "",
         image: "",
     });
+    const [countries, setCountries] = useState([]);
+
+    useEffect(() => {
+        apiConfig
+            .get(apiBaseURL.PUBLIC_COUNTRIES)
+            .then((res) => setCountries(res.data?.data || []))
+            .catch(() => {});
+    }, []);
 
     const [errors, setErrors] = useState({
         first_name: "",
@@ -64,6 +75,7 @@ const UpdateProfile = () => {
           userProfile.attributes.last_name === profileValue.last_name &&
           userProfile.attributes.email === profileValue.email &&
           userProfile.attributes.phone === profileValue.phone &&
+          userProfile.attributes.country === profileValue.country &&
           userProfile.attributes.image === profileValue.image;
 
     useEffect(() => {
@@ -81,6 +93,9 @@ const UpdateProfile = () => {
                     : "",
                 phone: userProfile
                     ? userProfile.attributes && userProfile.attributes.phone
+                    : "",
+                country: userProfile
+                    ? userProfile.attributes && userProfile.attributes.country
                     : "",
                 image: userProfile
                     ? userProfile.attributes && userProfile.attributes.image
@@ -151,6 +166,7 @@ const UpdateProfile = () => {
         formData.append("last_name", data.last_name);
         formData.append("email", data.email);
         formData.append("phone", data.phone);
+        formData.append("country", data.country || "");
         if (selectImg) {
             formData.append("image", data.image);
         }
@@ -236,6 +252,22 @@ const UpdateProfile = () => {
                                         ? errors["last_name"]
                                         : null}
                                 </span>
+                            </div>
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Country :</label>
+                                <select
+                                    name="country"
+                                    className="form-control"
+                                    value={profileValue.country || ""}
+                                    onChange={(e) => onChangeInput(e)}
+                                >
+                                    <option value="">-- Select country --</option>
+                                    {countries.map((c) => (
+                                        <option key={c.id} value={c.short_code}>
+                                            {c.name}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="col-md-6 mb-3">
                                 <label className="form-label">

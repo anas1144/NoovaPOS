@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
+use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 use Stancl\Tenancy\DatabaseConfig;
 use Stancl\Tenancy\Events\{
@@ -20,7 +21,7 @@ use Stancl\Tenancy\Events\{
 
 class MultiTenant extends BaseTenant implements TenantWithDatabase
 {
-    use HasFactory;
+    use HasFactory, HasDomains;
 
     protected $table = 'tenants';
 
@@ -29,12 +30,22 @@ class MultiTenant extends BaseTenant implements TenantWithDatabase
         return [
             'id',
             'store_id',
+            'uses_separate_db',
         ];
     }
 
     protected $casts = [
         'data' => 'array',
+        'uses_separate_db' => 'boolean',
     ];
+
+    /**
+     * Whether this tenant should run on its own isolated database.
+     */
+    public function usesSeparateDb(): bool
+    {
+        return (bool) $this->uses_separate_db;
+    }
 
     protected $dispatchesEvents = [
         'saving' => SavingTenant::class,

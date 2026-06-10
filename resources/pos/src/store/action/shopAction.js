@@ -14,7 +14,7 @@ export const fetchShops =
             dispatch(setLoading(true));
         }
         let url = apiBaseURL.SHOPS;
-        if (!_.isEmpty(filter)) {
+        if ((filter && Object.keys(filter).length > 0)) {
             url += requestParam(filter, false, true, null, url);
         }
         await apiConfig

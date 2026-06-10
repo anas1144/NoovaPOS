@@ -25,6 +25,23 @@ use App\Http\Controllers\API\PurchaseReturnAPIController;
 use App\Http\Controllers\API\QuotationAPIController;
 use App\Http\Controllers\API\ReportAPIController;
 use App\Http\Controllers\API\RoleAPIController;
+use App\Http\Controllers\API\PlatformRoleTemplateController;
+use App\Http\Controllers\API\TenantBillingController;
+use App\Http\Controllers\API\AttendanceController;
+use App\Http\Controllers\API\AttendanceTaskController;
+use App\Http\Controllers\API\AttendanceSettingController;
+use App\Http\Controllers\API\AttendanceDashboardController;
+use App\Http\Controllers\API\EmployeeBiometricController;
+use App\Http\Controllers\API\DeviceConnectorController;
+use App\Http\Controllers\API\AttendanceRequestController;
+use App\Http\Controllers\API\AttendanceReportController;
+use App\Http\Controllers\API\WebAuthnController;
+use App\Http\Controllers\API\PlatformPaymentController;
+use App\Http\Controllers\API\PlatformBankAccountController;
+use App\Http\Controllers\API\PlatformSettingController;
+use App\Http\Controllers\API\PlatformShopTypeController;
+use App\Http\Controllers\API\PlatformFeatureController;
+use App\Http\Controllers\API\StoreFeatureController;
 use App\Http\Controllers\API\SaleAPIController;
 use App\Http\Controllers\API\SaleReturnAPIController;
 use App\Http\Controllers\API\SalesPaymentAPIController;
@@ -73,16 +90,69 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('products/generate-barcode', [ProductAPIController::class, 'generateStandaloneBarcode']);
 
+// Tenant billing — auth required but NOT tenant.active, so a locked/expired
+// tenant can still reach billing to renew.
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('billing/overview', [TenantBillingController::class, 'overview']);
+    Route::post('billing/request', [TenantBillingController::class, 'requestPayment']);
+    Route::post('billing/checkout', [TenantBillingController::class, 'checkout']);
+    Route::post('billing/addon-request', [TenantBillingController::class, 'requestAddon']);
+    Route::post('billing/fbr-request', [TenantBillingController::class, 'requestFbr']);
+});
+
 Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
     Route::prefix('platform')->middleware('role:platform_super_admin')->group(function () {
+        // Subscription payments (super admin sees all tenant payments + confirms)
+        Route::get('payments', [PlatformPaymentController::class, 'index']);
+        Route::post('payments/{payment}/confirm', [PlatformPaymentController::class, 'confirm']);
+        Route::post('payments/{payment}/reject', [PlatformPaymentController::class, 'reject']);
+        // Payout bank accounts (per country)
+        Route::get('bank-accounts', [PlatformBankAccountController::class, 'index']);
+        Route::post('bank-accounts', [PlatformBankAccountController::class, 'store']);
+        Route::patch('bank-accounts/{bankAccount}', [PlatformBankAccountController::class, 'update']);
+        Route::delete('bank-accounts/{bankAccount}', [PlatformBankAccountController::class, 'destroy']);
+        // Global billing settings (discount + add-on rates)
+        Route::get('settings', [PlatformSettingController::class, 'show']);
+        Route::post('settings', [PlatformSettingController::class, 'update']);
+        // Subscription payment methods (enable/disable request + checkout) and
+        // the per-country online checkout channels.
+        Route::get('billing-methods', [PlatformSettingController::class, 'billingMethods']);
+        Route::post('billing-methods', [PlatformSettingController::class, 'updateBillingMethods']);
+        // Shop-type registry (enable/disable business types)
+        Route::get('shop-types', [PlatformShopTypeController::class, 'index']);
+        Route::post('shop-types', [PlatformShopTypeController::class, 'store']);
+        Route::patch('shop-types/{shopType}', [PlatformShopTypeController::class, 'update']);
+        // Global feature toggles (apply to all tenants)
+        Route::get('features', [PlatformFeatureController::class, 'index']);
+        Route::post('features', [PlatformFeatureController::class, 'update']);
+        // Marketing CMS
+        Route::get('cms/pages', [\App\Http\Controllers\API\PlatformCmsController::class, 'index']);
+        Route::get('cms/pages/{cmsPage}', [\App\Http\Controllers\API\PlatformCmsController::class, 'show']);
+        Route::post('cms/pages', [\App\Http\Controllers\API\PlatformCmsController::class, 'store']);
+        Route::post('cms/pages/{cmsPage}', [\App\Http\Controllers\API\PlatformCmsController::class, 'update']);
+        Route::delete('cms/pages/{cmsPage}', [\App\Http\Controllers\API\PlatformCmsController::class, 'destroy']);
+        Route::get('blog', [\App\Http\Controllers\API\PlatformBlogController::class, 'index']);
+        Route::post('blog', [\App\Http\Controllers\API\PlatformBlogController::class, 'store']);
+        Route::post('blog/{blogPost}', [\App\Http\Controllers\API\PlatformBlogController::class, 'update']);
+        Route::delete('blog/{blogPost}', [\App\Http\Controllers\API\PlatformBlogController::class, 'destroy']);
+
         Route::get('dashboard', [PlatformSaasController::class, 'dashboard']);
         Route::get('tenants', [PlatformTenantController::class, 'index']);
         Route::post('tenants', [PlatformTenantController::class, 'store']);
         Route::get('tenants/{tenantId}', [PlatformTenantController::class, 'show']);
         Route::patch('tenants/{tenantId}/status', [PlatformTenantController::class, 'changeStatus']);
+        Route::patch('tenants/{tenantId}/separate-db', [PlatformTenantController::class, 'toggleSeparateDb']);
+        Route::post('tenants/{tenantId}/addons', [PlatformTenantController::class, 'grantAddons']);
         Route::post('tenants/{tenantId}/subscription', [PlatformSaasController::class, 'assignTenantPlan']);
         Route::get('tenants/{tenantId}/usage', [PlatformSaasController::class, 'tenantUsage']);
         Route::post('tenants/{tenantId}/backups', [PlatformSaasController::class, 'requestBackup']);
+        // Role + permission templates (super-admin defines roles per shop type)
+        Route::get('role-templates/permission-catalog', [PlatformRoleTemplateController::class, 'permissionCatalog']);
+        Route::get('role-templates', [PlatformRoleTemplateController::class, 'index']);
+        Route::post('role-templates', [PlatformRoleTemplateController::class, 'store']);
+        Route::patch('role-templates/{roleTemplate}', [PlatformRoleTemplateController::class, 'update']);
+        Route::delete('role-templates/{roleTemplate}', [PlatformRoleTemplateController::class, 'destroy']);
+
         Route::get('plans', [PlatformSaasController::class, 'plans']);
         Route::post('plans', [PlatformSaasController::class, 'storePlan']);
         Route::patch('plans/{plan}', [PlatformSaasController::class, 'updatePlan']);
@@ -94,6 +164,14 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
     });
 
     Route::resource('stores', StoreAPIController::class);
+    Route::get('store-features', [StoreFeatureController::class, 'index']);
+    Route::post('store-features', [StoreFeatureController::class, 'update']);
+    Route::get('my-features', [StoreFeatureController::class, 'mine']);
+
+    Route::get('price-tiers', [\App\Http\Controllers\API\PriceTierController::class, 'index']);
+    Route::post('price-tiers', [\App\Http\Controllers\API\PriceTierController::class, 'store']);
+    Route::patch('price-tiers/{priceTier}', [\App\Http\Controllers\API\PriceTierController::class, 'update']);
+    Route::delete('price-tiers/{priceTier}', [\App\Http\Controllers\API\PriceTierController::class, 'destroy']);
     Route::post('change-store/{store}', [StoreAPIController::class, 'changeStore']);
     Route::get('change-status/{store}', [StoreAPIController::class, 'changeStatus']);
     Route::get('change-default-store/{store}', [StoreAPIController::class, 'changeDefaultStore']);
@@ -131,6 +209,9 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
 
     // roles route
     Route::middleware('permission:manage_roles')->group(function () {
+        // Tenant creates roles from super-admin shop-type templates (no raw permission editing)
+        Route::get('roles/available-templates', [RoleAPIController::class, 'availableTemplates']);
+        Route::post('roles/from-template', [RoleAPIController::class, 'storeFromTemplate']);
         Route::resource('roles', RoleAPIController::class);
     });
     Route::get('roles', [RoleAPIController::class, 'index']);
@@ -167,6 +248,7 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
 
     // products route
 
+    Route::get('products/{product}/unit-levels', [ProductAPIController::class, 'unitLevels']);
     Route::resource('products', ProductAPIController::class);
     Route::resource('main-products', MainProductAPIController::class);
     Route::post(
@@ -351,6 +433,32 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
     Route::post('restaurant/kots', [RestaurantAPIController::class, 'storeTicket']);
     Route::patch('restaurant/kots/{ticket}/status', [RestaurantAPIController::class, 'updateTicketStatus']);
 
+    // Customer displays (kiosks) + their order board
+    Route::get('customer-displays', [\App\Http\Controllers\API\CustomerDisplayController::class, 'index']);
+    Route::post('customer-displays', [\App\Http\Controllers\API\CustomerDisplayController::class, 'store']);
+    Route::patch('customer-displays/{customerDisplay}', [\App\Http\Controllers\API\CustomerDisplayController::class, 'update']);
+    Route::delete('customer-displays/{customerDisplay}', [\App\Http\Controllers\API\CustomerDisplayController::class, 'destroy']);
+    Route::get('customer-orders', [\App\Http\Controllers\API\CustomerDisplayController::class, 'orders']);
+    Route::post('customer-orders/{customerOrder}/accept', [\App\Http\Controllers\API\CustomerDisplayController::class, 'acceptOrder']);
+    Route::post('customer-orders/{customerOrder}/assign', [\App\Http\Controllers\API\CustomerDisplayController::class, 'assignOrder']);
+    Route::post('customer-orders/{customerOrder}/serve', [\App\Http\Controllers\API\CustomerDisplayController::class, 'serveOrder']);
+
+    Route::get('deliveries', [\App\Http\Controllers\API\DeliveryAPIController::class, 'index']);
+    Route::get('delivery-boys', [\App\Http\Controllers\API\DeliveryAPIController::class, 'deliveryBoys']);
+    Route::post('deliveries/{sale}/assign', [\App\Http\Controllers\API\DeliveryAPIController::class, 'assign']);
+    Route::post('deliveries/{sale}/status', [\App\Http\Controllers\API\DeliveryAPIController::class, 'updateStatus']);
+
+    Route::get('deals', [\App\Http\Controllers\API\DealAPIController::class, 'index']);
+    Route::post('deals', [\App\Http\Controllers\API\DealAPIController::class, 'store']);
+    Route::post('deals/{deal}', [\App\Http\Controllers\API\DealAPIController::class, 'update']);
+    Route::delete('deals/{deal}', [\App\Http\Controllers\API\DealAPIController::class, 'destroy']);
+
+    Route::get('restaurant/kitchens', [RestaurantAPIController::class, 'kitchens']);
+    Route::post('restaurant/kitchens', [RestaurantAPIController::class, 'storeKitchen']);
+    Route::patch('restaurant/kitchens/{kitchen}', [RestaurantAPIController::class, 'updateKitchen']);
+    Route::delete('restaurant/kitchens/{kitchen}', [RestaurantAPIController::class, 'destroyKitchen']);
+    Route::post('restaurant/assign-waiter-kitchen', [RestaurantAPIController::class, 'assignWaiterKitchen']);
+
     // Recurring / Water Supply module
     Route::get('recurring/plans', [RecurringAPIController::class, 'plans']);
     Route::post('recurring/plans', [RecurringAPIController::class, 'storePlan']);
@@ -412,6 +520,59 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
     Route::post('hr/employees/{employee}/check-in', [HRAPIController::class, 'checkIn']);
     Route::post('hr/employees/{employee}/check-out', [HRAPIController::class, 'checkOut']);
     Route::patch('hr/attendance/{attendance}', [HRAPIController::class, 'updateAttendance']);
+
+    // Attendance (POS-integrated kiosk + tasks + biometrics + dashboard)
+    Route::get('attendance/status', [AttendanceController::class, 'status']);
+    Route::post('attendance/identify', [AttendanceController::class, 'identify']);
+    Route::post('attendance/check-in', [AttendanceController::class, 'checkIn']);
+    Route::post('attendance/check-out', [AttendanceController::class, 'checkOut']);
+    Route::post('attendance/break/start', [AttendanceController::class, 'startBreak']);
+    Route::post('attendance/break/end', [AttendanceController::class, 'endBreak']);
+    Route::post('attendance/manual', [AttendanceController::class, 'manual']);
+
+    Route::get('attendance/tasks', [AttendanceTaskController::class, 'index']);
+    Route::post('attendance/tasks/start', [AttendanceTaskController::class, 'start']);
+    Route::post('attendance/tasks/{task}/pause', [AttendanceTaskController::class, 'pause']);
+    Route::post('attendance/tasks/{task}/resume', [AttendanceTaskController::class, 'resume']);
+    Route::post('attendance/tasks/{task}/complete', [AttendanceTaskController::class, 'complete']);
+
+    Route::get('attendance/dashboard', [AttendanceDashboardController::class, 'dashboard']);
+    Route::get('attendance/live', [AttendanceDashboardController::class, 'live']);
+    Route::get('attendance/records', [AttendanceDashboardController::class, 'records']);
+
+    Route::get('attendance/settings', [AttendanceSettingController::class, 'show']);
+    Route::post('attendance/settings', [AttendanceSettingController::class, 'update']);
+
+    Route::get('attendance/biometrics', [EmployeeBiometricController::class, 'index']);
+    Route::get('attendance/biometrics/face-data', [EmployeeBiometricController::class, 'faceData']);
+    Route::post('attendance/biometrics/face', [EmployeeBiometricController::class, 'enrollFace']);
+    Route::post('attendance/biometrics/fingerprint', [EmployeeBiometricController::class, 'enrollFingerprint']);
+    Route::delete('attendance/biometrics/{biometric}', [EmployeeBiometricController::class, 'destroy']);
+
+    // No-code device connectors (external biometric scanners / face terminals / cloud APIs)
+    Route::get('attendance/device-connectors', [DeviceConnectorController::class, 'index']);
+    Route::get('attendance/device-connectors/kiosk', [DeviceConnectorController::class, 'forKiosk']);
+    Route::post('attendance/device-connectors', [DeviceConnectorController::class, 'store']);
+    Route::patch('attendance/device-connectors/{deviceConnector}', [DeviceConnectorController::class, 'update']);
+    Route::delete('attendance/device-connectors/{deviceConnector}', [DeviceConnectorController::class, 'destroy']);
+    Route::post('attendance/device-connectors/{deviceConnector}/test', [DeviceConnectorController::class, 'test']);
+
+    // Attendance requests (corrections / leave) + manager review
+    Route::get('attendance/requests', [AttendanceRequestController::class, 'index']);
+    Route::post('attendance/requests', [AttendanceRequestController::class, 'store']);
+    Route::post('attendance/requests/{attendanceRequest}/approve', [AttendanceRequestController::class, 'approve']);
+    Route::post('attendance/requests/{attendanceRequest}/reject', [AttendanceRequestController::class, 'reject']);
+
+    // WebAuthn (device-sensor biometric attendance — no external hardware)
+    Route::post('attendance/webauthn/register-options', [WebAuthnController::class, 'registerOptions']);
+    Route::post('attendance/webauthn/register', [WebAuthnController::class, 'register']);
+    Route::post('attendance/webauthn/login-options', [WebAuthnController::class, 'loginOptions']);
+    Route::post('attendance/webauthn/verify', [WebAuthnController::class, 'verify']);
+
+    // Attendance reports
+    Route::get('attendance/reports/summary', [AttendanceReportController::class, 'summary']);
+    Route::get('attendance/reports/productivity', [AttendanceReportController::class, 'productivity']);
+    Route::get('attendance/reports/performance', [AttendanceReportController::class, 'performance']);
 
     // CRM
     Route::get('crm/leads', [CRMAPIController::class, 'leads']);
@@ -606,7 +767,17 @@ Route::post('register-tenant', [TenantRegistrationController::class, 'register']
 // ── Public marketing endpoints (no auth required) ─────────────────────
 Route::prefix('public')->name('public.')->group(function () {
     Route::get('plans',               [PublicController::class, 'plans'])->name('plans');
+    Route::get('countries',           [PublicController::class, 'countries'])->name('countries');
+    Route::get('currencies',          [PublicController::class, 'currencies'])->name('currencies');
+    Route::get('shop-types',          [PublicController::class, 'shopTypes'])->name('shop-types');
+    Route::get('cms/menu',            [PublicController::class, 'cmsMenu'])->name('cms.menu');
+    Route::get('cms/page/{slug}',     [PublicController::class, 'cmsPage'])->name('cms.page');
+    Route::get('blog',                [PublicController::class, 'blogList'])->name('blog.list');
+    Route::get('blog/{slug}',         [PublicController::class, 'blogPost'])->name('blog.post');
     Route::post('demo-request',       [PublicController::class, 'demoRequest'])->name('demo-request');
+    // Customer self-service kiosk (no login, scoped by display token)
+    Route::get('kiosk/{token}/config', [\App\Http\Controllers\API\KioskController::class, 'config'])->name('kiosk.config');
+    Route::post('kiosk/{token}/order', [\App\Http\Controllers\API\KioskController::class, 'order'])->name('kiosk.order');
 });
 
 // Super-admin only: manage demo requests (requires Sanctum auth)

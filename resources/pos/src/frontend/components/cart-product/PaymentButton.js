@@ -13,6 +13,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import moment from "moment";
 import { addHoldList } from "../../../store/action/pos/HoldListAction";
+import SendToKitchen from "./SendToKitchen";
+import AddDealButton from "./AddDealButton";
+import MixedUnitButton from "./MixedUnitButton";
 
 const PaymentButton = (props) => {
     const {
@@ -230,8 +233,10 @@ const PaymentButton = (props) => {
     };
 
     return (
-        // <div className='d-xl-flex align-items-center justify-content-between'>
-        //      <h5 className='mb-0'>Payment Method</h5>
+        <>
+        <AddDealButton updateProducts={updateProducts} setUpdateProducts={setUpdateProducts} />
+        <MixedUnitButton updateProducts={updateProducts} setUpdateProducts={setUpdateProducts} />
+        <SendToKitchen updateProducts={updateProducts} setUpdateProducts={setUpdateProducts} />
         <div className="d-flex align-items-center justify-content-between">
             <Button
                 type="button"
@@ -283,7 +288,7 @@ const PaymentButton = (props) => {
                 />
             )}
         </div>
-        // </div>
+        </>
     );
 };
 export default PaymentButton;

@@ -3,22 +3,31 @@ import { Modal } from 'react-bootstrap-v5';
 import { useDispatch } from 'react-redux';
 import { getFormattedMessage, placeholderText } from '../../shared/sharedMethod';
 import { addStore, editStore } from '../../store/action/storeAction';
+import apiConfig from '../../config/apiConfig';
+import { apiBaseURL } from '../../constants';
 
 const StoreForm = ({ show, data, handleClose, title, isEdit }) => {
     const dispatch = useDispatch();
     const [storeValue, setStoreValue] = useState({
         name: "",
+        shop_type: "retail",
     });
+    const [shopTypes, setShopTypes] = useState([]);
+    const [errors, setErrors] = useState({});
 
-    const [errors, setErrors] = useState({
-        name: "",
-    });
+    useEffect(() => {
+        apiConfig
+            .get(apiBaseURL.PUBLIC_SHOP_TYPES)
+            .then((res) => setShopTypes(res.data?.data || []))
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         setStoreValue({
             name: data?.name ? data?.name : "",
-        })
-        setErrors('');
+            shop_type: data?.shop_type ? data?.shop_type : "retail",
+        });
+        setErrors({});
     }, [data, show]);
 
     const handleValidation = () => {
@@ -39,12 +48,13 @@ const StoreForm = ({ show, data, handleClose, title, isEdit }) => {
             ...inputs,
             [e.target.name]: e.target.value
         }));
-        setErrors('');
+        setErrors({});
     };
 
     const prepareFormData = (data) => {
         const formData = new FormData();
         formData.append("name", data.name);
+        formData.append("shop_type", data.shop_type || "retail");
         if (isEdit) {
             formData.append("_method", "PATCH");
         }
@@ -52,9 +62,7 @@ const StoreForm = ({ show, data, handleClose, title, isEdit }) => {
     };
 
     const clearData = () => {
-        setStoreValue({
-            name: '',
-        });
+        setStoreValue({ name: '', shop_type: 'retail' });
         setErrors({});
     }
 
@@ -99,6 +107,25 @@ const StoreForm = ({ show, data, handleClose, title, isEdit }) => {
                             onChange={onChangeInput} />
                         <span className='text-danger d-block fw-400 fs-small mt-2'>{errors['name'] ? errors['name'] : null}</span>
                     </div>
+                    <div className='col-md-12 mb-3'>
+                        <label className='form-label'>Business / Shop Type:</label>
+                        <select
+                            name='shop_type'
+                            className='form-control'
+                            value={storeValue.shop_type}
+                            onChange={onChangeInput}
+                        >
+                            {shopTypes.length === 0 && (
+                                <option value='retail'>Retail</option>
+                            )}
+                            {shopTypes.map((t) => (
+                                <option key={t.key} value={t.key}>{t.label}</option>
+                            ))}
+                        </select>
+                        <span className='text-muted fs-small d-block mt-1'>
+                            Shops created under this store inherit this type.
+                        </span>
+                    </div>
                 </div>
             </Modal.Body>
             <Modal.Footer className='pt-0'>
@@ -122,4 +149,3 @@ const StoreForm = ({ show, data, handleClose, title, isEdit }) => {
 }
 
 export default StoreForm;
-

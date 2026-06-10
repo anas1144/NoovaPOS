@@ -1,7 +1,15 @@
-export const prepareCartArray = products => {
+export const prepareCartArray = (products, priceTier = 'retail') => {
 
     let cartProductRowArray = [];
+    // Effective unit price for the chosen tier: a per-product tier override
+    // (tier_prices[tier]) when set, otherwise the base (retail) product_price.
+    const tierPrice = (product) => {
+        const tp = product.attributes.tier_prices || {};
+        const v = priceTier && priceTier !== 'retail' ? tp[priceTier] : undefined;
+        return (v !== undefined && v !== null && v !== '') ? Number(v) : product.attributes.product_price;
+    };
     products.forEach(product => {
+        const unitPrice = tierPrice(product);
         const taxAmount = (unitPrice) => {
             const total = Number(unitPrice);
             let tax = 0;
@@ -23,10 +31,12 @@ export const prepareCartArray = products => {
             stock_alert: product.attributes.stock_alert,
             product_id: product.id,
             product_cost: product.attributes.product_cost,
-            net_unit_cost: product.attributes.product_price,
+            net_unit_cost: unitPrice,
             tax_type: product.attributes.tax_type.value ? Number(product.attributes.tax_type.value) : product.attributes.tax_type,
-            product_price: product.attributes.product_price,
-            tax_amount: taxAmount(product.attributes.product_price),
+            product_price: unitPrice,
+            tax_amount: taxAmount(unitPrice),
+            base_price: product.attributes.product_price,
+            tier_prices: product.attributes.tier_prices || {},
             discount_type: 1,
             discount_value: 0,
             discount_amount: 0,

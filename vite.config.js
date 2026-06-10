@@ -47,6 +47,25 @@ export default defineConfig({
         react(),
     ],
 
+    css: {
+        preprocessorOptions: {
+            scss: {
+                // Silence Dart Sass deprecation warnings that come from
+                // node_modules (Bootstrap, Swiper) and legacy project SCSS
+                // using @import, color functions, and variable-exists().
+                // These are warnings only — the CSS output is correct.
+                // Remove once Bootstrap / Swiper ship Sass-modern-compatible versions.
+                silenceDeprecations: [
+                    'import',
+                    'global-builtin',
+                    'color-functions',
+                    'if-function',
+                ],
+                quietDeps: true,
+            },
+        },
+    },
+
     oxc: {
         include: /resources[\\/]pos[\\/]src[\\/].*\.[jt]sx?$/,
         exclude: /node_modules/,

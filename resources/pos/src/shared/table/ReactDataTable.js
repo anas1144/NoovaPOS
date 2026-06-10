@@ -21,6 +21,8 @@ const ReactDataTable = (props) => {
         items,
         ButtonValue,
         to,
+        expandableRows,
+        expandableRowsComponent,
         defaultLimit = Filters.OBJ.page,
         onChange,
         totalRows,
@@ -376,6 +378,8 @@ const ReactDataTable = (props) => {
                 onChangeRowsPerPage={handlePerRowsChange}
                 sortIcon={renderSortIcons(direction)}
                 persistTableHead={false}
+                expandableRows={expandableRows}
+                expandableRowsComponent={expandableRowsComponent}
             />
         </div>
     );

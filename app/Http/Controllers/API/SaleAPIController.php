@@ -25,6 +25,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Shop;
+use App\Services\FbrSubmissionService;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 /**
@@ -130,7 +132,44 @@ class SaleAPIController extends AppBaseController
 
         $sale = $this->saleRepository->storeSale($input);
 
-        return new SaleResource($sale);
+        // ── FBR POS submission (Pakistan shops only) ───────────────────────
+        // Attempt synchronously so the FBR invoice number can be included in
+        // the response and printed on the receipt immediately.
+        // If the shop is not PK / FBR disabled, this is a no-op.
+        $fbrInvoice = null;
+        try {
+            $shop = isset($input['shop_id'])
+                ? Shop::find($input['shop_id'])
+                : null;
+
+            $fbrService = app(FbrSubmissionService::class);
+            $fbrInvoice = $fbrService->submitForSale($sale->load('saleItems.product', 'customer'), $shop);
+        } catch (\Throwable $e) {
+            // Never fail the sale because of FBR — it can be retried from queue
+            \Log::warning('FBR submission error on sale ' . $sale->id . ': ' . $e->getMessage());
+        }
+
+        $resource = new SaleResource($sale);
+
+        // Attach FBR info to response so POS receipt can display it
+        if ($fbrInvoice) {
+            $resource->additional([
+                'fbr' => [
+                    'fbr_invoice_id'     => $fbrInvoice->id,
+                    'fbr_invoice_number' => $fbrInvoice->fbr_invoice_number,
+                    'usin'               => $fbrInvoice->invoice_no,
+                    'status'             => $fbrInvoice->status,
+                    'fbr_code'           => $fbrInvoice->fbr_code,
+                    'fbr_response'       => $fbrInvoice->fbr_response,
+                    'qr_payload'         => $fbrInvoice->fbr_qr_payload,
+                    // What to print: FBR number if synced, else USIN with pending flag
+                    'printable_number'   => $fbrInvoice->fbr_invoice_number ?? $fbrInvoice->invoice_no,
+                    'is_pending'         => !$fbrInvoice->isSynced(),
+                ],
+            ]);
+        }
+
+        return $resource;
     }
 
     public function show($id): SaleResource

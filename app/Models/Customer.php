@@ -58,6 +58,7 @@ class Customer extends BaseModel
     protected $fillable = [
         'tenant_id',
         'name',
+        'price_tier',
         'email',
         'phone',
         'country',
@@ -90,6 +91,7 @@ class Customer extends BaseModel
     {
         $fields = [
             'name' => $this->name,
+            'price_tier' => $this->price_tier ?: 'retail',
             'email' => $this->email,
             'phone' => $this->phone,
             'country' => $this->country,

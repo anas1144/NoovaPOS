@@ -108,6 +108,36 @@ const PosMainPage = (props) => {
     const [updateHolList, setUpdateHoldList] = useState(false);
     const [hold_ref_no, setHold_ref_no] = useState("");
     const [salePage, setSalePage] = useState(1);
+
+    // Multi-tier pricing: selected tier + available tiers. Re-prices the cart.
+    const [priceTier, setPriceTier] = useState("retail");
+    const [priceTiers, setPriceTiers] = useState([]);
+    useEffect(() => {
+        apiConfig.get(apiBaseURL.PRICE_TIERS)
+            .then((res) => setPriceTiers(res.data?.data || []))
+            .catch(() => {});
+    }, []);
+    const recomputeCartForTier = (tier, cart = updateProducts) =>
+        cart.map((item) => {
+            const tp = item.tier_prices || {};
+            const v = tier && tier !== "retail" ? tp[tier] : undefined;
+            const price = (v !== undefined && v !== null && v !== "")
+                ? Number(v)
+                : Number(item.base_price ?? item.product_price);
+            return { ...item, net_unit_cost: price, product_price: price };
+        });
+    const onChangeTier = (tier) => {
+        setPriceTier(tier);
+        setUpdateProducts(recomputeCartForTier(tier));
+    };
+    // When a customer is selected, default to their price tier.
+    useEffect(() => {
+        const cust = selectedCustomerOption && selectedCustomerOption[0];
+        const tier = cust?.price_tier || cust?.attributes?.price_tier;
+        if (tier && tier !== priceTier) {
+            onChangeTier(tier);
+        }
+    }, [selectedCustomerOption]);
     const [cartItemValue, setCartItemValue] = useState({
         discount_type: discountType.FIXED,    // 0 = fixed, 1 = percentage
         discount_value: 0,
@@ -1005,6 +1035,20 @@ const PosMainPage = (props) => {
                                 </Table>
                             </div>
                             <div>
+                                {priceTiers.length > 0 && (
+                                    <div className="d-flex align-items-center justify-content-between mb-2 px-2">
+                                        <span className="fw-semibold">Price Tier</span>
+                                        <select
+                                            className="form-control w-auto"
+                                            value={priceTier}
+                                            onChange={(e) => onChangeTier(e.target.value)}
+                                        >
+                                            {priceTiers.map((t) => (
+                                                <option key={t.id} value={t.key}>{t.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 <CartItemMainCalculation
                                     totalQty={totalQty}
                                     subTotal={subTotal}

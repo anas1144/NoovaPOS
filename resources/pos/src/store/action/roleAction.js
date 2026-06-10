@@ -20,7 +20,7 @@ export const fetchRoles =
         const admin = true;
         let url = apiBaseURL.ROLES;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||
@@ -104,6 +104,37 @@ export const addRole = (roles, navigate) => async (dispatch) => {
         .catch(({ response }) => {
             dispatch(
                 addToast({ text: response.data.message, type: toastType.ERROR })
+            );
+        });
+};
+
+// Create a tenant role from a super-admin shop-type template (no permission editing).
+export const addRoleFromTemplate = (data, navigate) => async (dispatch) => {
+    await apiConfig
+        .post(apiBaseURL.ROLE_FROM_TEMPLATE, data)
+        .then((response) => {
+            dispatch({
+                type: rolesActionType.ADD_ROLES,
+                payload: response.data.data,
+            });
+            dispatch(
+                addToast({
+                    text:
+                        response?.data?.message ||
+                        getFormattedMessage("role.success.create.message"),
+                })
+            );
+            navigate("/app/roles");
+            dispatch(addInToTotalRecord(1));
+        })
+        .catch(({ response }) => {
+            dispatch(
+                addToast({
+                    text:
+                        response?.data?.message ||
+                        "Failed to create role from template",
+                    type: toastType.ERROR,
+                })
             );
         });
 };

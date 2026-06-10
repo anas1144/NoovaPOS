@@ -57,6 +57,7 @@ class RegisterTenantRequest extends FormRequest
             'phone'            => 'nullable|string|max:30',
             'password'         => 'required|min:6',
             'confirm_password' => 'required|same:password',
+            'country'          => 'nullable|string|max:5',
         ];
     }
 }

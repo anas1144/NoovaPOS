@@ -69,6 +69,8 @@ class Role extends roleModal
     const ACCOUNTANT        = 'accountant';
     const INVENTORY_MANAGER = 'inventory_manager';
     const DELIVERY_STAFF    = 'delivery_staff';
+    const KITCHEN           = 'kitchen';
+    const DELIVERY_BOY      = 'delivery_boy';
 
     public static $rules = [
         'name' => 'required|unique:roles',

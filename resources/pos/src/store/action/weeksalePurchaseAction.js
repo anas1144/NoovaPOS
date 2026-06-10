@@ -8,7 +8,7 @@ export const weekSalePurchases = (filter) => async (dispatch) => {
     dispatch(setLoading(true));
 
     let url = apiBaseURL.WEEK_SALE_PURCHASES_API;
-    if (!_.isEmpty(filter)) {
+    if (filter && Object.keys(filter).length > 0) {
         url += requestParam(filter, null, null, null, url);
     }
 

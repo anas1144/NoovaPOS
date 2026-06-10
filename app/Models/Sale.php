@@ -124,6 +124,11 @@ class Sale extends BaseModel implements HasMedia, JsonResourceful
         'barcode_symbol',
         'is_return',
         'user_id',
+        'price_tier',
+        'order_type',
+        'delivery_boy_id',
+        'delivery_address',
+        'delivery_status',
     ];
 
     public static $rules = [

@@ -19,6 +19,7 @@ class Employee extends BaseModel
         'store_id',
         'shop_id',
         'employee_code',
+        'attendance_code',
         'first_name',
         'last_name',
         'email',
@@ -50,6 +51,16 @@ class Employee extends BaseModel
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function biometrics(): HasMany
+    {
+        return $this->hasMany(EmployeeBiometric::class, 'employee_id');
+    }
+
+    public function faceBiometric()
+    {
+        return $this->hasOne(EmployeeBiometric::class, 'employee_id')->where('type', 'face');
     }
 
     public function getFullNameAttribute(): string

@@ -48,6 +48,10 @@ class StoreAPIController extends AppBaseController
      */
     public function store(CreateStoreRequest $request)
     {
+        // Enforce the plan's store limit (plus any purchased add-ons).
+        app(\App\Services\TenantSubscriptionService::class)
+            ->assertWithinLimit(Auth::user()->tenant_id, 'stores');
+
         $input = $request->all();
 
         $store = $this->storeRepository->store($input);
@@ -92,7 +96,12 @@ class StoreAPIController extends AppBaseController
     public function changeStore(Store $store)
     {
         try {
-            User::find(auth()->id())->update(['tenant_id' => $store->tenant_id]);
+            // Record the user's selected store. tenant_id stays the same (all the
+            // tenant's stores share it) — the active pointer is active_store_id.
+            User::where('id', auth()->id())->update([
+                'tenant_id'       => $store->tenant_id,
+                'active_store_id' => $store->id,
+            ]);
 
             return $this->sendSuccess(__('messages.success.active_store_changed'));
         } catch (Exception $exception) {

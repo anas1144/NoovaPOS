@@ -246,6 +246,13 @@ class Product extends BaseModel implements HasMedia, JsonResourceful
             'warehouse' => $this->warehouse($this->id) ?? '',
             'barcode_url' => Storage::url('product_barcode/barcode-PR_' . $this->id . '.png'),
             'in_stock' => $this->inStock($this->id),
+            'tier_prices' => \App\Models\ProductPrice::withoutGlobalScope('tenant')
+                ->where('product_id', $this->id)
+                ->pluck('price', 'price_tier'),
+            'unit_levels' => \App\Models\ProductUnitLevel::withoutGlobalScope('tenant')
+                ->where('product_id', $this->id)
+                ->orderBy('sort_order')
+                ->get(['name', 'factor_to_base']),
         ];
 
         if ($this->variationProduct) {

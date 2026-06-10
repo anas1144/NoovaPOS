@@ -21,7 +21,7 @@ export const fetchSuppliers =
         }
         let url = apiBaseURL.SUPPLIERS;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

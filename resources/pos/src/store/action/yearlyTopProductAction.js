@@ -8,7 +8,7 @@ export const yearlyTopProduct = (filter) => async (dispatch) => {
     dispatch(setLoading(true));
 
     let url = apiBaseURL.YEAR_TOP_PRODUCT;
-    if (!_.isEmpty(filter)) {
+    if (filter && Object.keys(filter).length > 0) {
         url += requestParam(filter, null, null, null, url);
     }
 

@@ -13,7 +13,7 @@ export const stockReportAction =
         const stockReport = true;
         let url = apiBaseURL.STOCK_REPORT + "?warehouse_id=" + id;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

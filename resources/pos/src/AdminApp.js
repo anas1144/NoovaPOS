@@ -16,7 +16,7 @@ function AdminApp(props) {
         const permissions = config;
         let filterRoutes = [];
         route.forEach((route) => {
-            if (loginUser.roles !== 'admin' && (route.path === "store" || route.path === "payment-methods")) return;
+            if (!['admin','platform_super_admin','tenant_owner'].includes(loginUser?.roles) && (route.path === "store" || route.path === "payment-methods")) return;
             if (
                 (permissions && permissions.indexOf(route.permission) !== -1) ||
                 route.permission === ""

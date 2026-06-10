@@ -32,11 +32,25 @@ return [
      * To configure their behavior, see the config keys below.
      */
     'bootstrappers' => [
+        // HYBRID DATABASE-PER-TENANT.
+        //
+        // The DatabaseTenancyBootstrapper makes the DB connection tenant-aware: when
+        // tenancy is bootstrapped it switches the default connection to the tenant's
+        // own database (prefix + tenant_id, e.g. `tenantabc-group-demo`).
+        //
+        // IMPORTANT: this bootstrapper only takes effect when tenancy is actually
+        // *bootstrapped*, which is triggered by the BootstrapTenancy listener on the
+        // TenancyInitialized event (see TenancyServiceProvider). That listener is
+        // still intentionally OFF so the existing central-DB queries keep working
+        // while the query layer is migrated. New tenants already get their own DB
+        // created + migrated on onboarding, so the data layer can be cut over
+        // incrementally without breaking the running app.
         Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper::class,
+
         Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper::class,
         Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper::class,
         Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper::class,
-        // Stancl\Tenancy\Bootstrappers\RedisTenancyBootstrapper::class, // Note: phpredis is needed
+        // Stancl\Tenancy\Bootstrappers\RedisTenancyBootstrapper::class,
     ],
 
     /**
@@ -54,8 +68,11 @@ return [
         /**
          * Tenant database names are created like this:
          * prefix + tenant_id + suffix.
+         *
+         * With prefix 'noovapos_tenant_' a tenant whose id is "abc-group-demo"
+         * gets the database  noovapos_tenant_abc-group-demo.
          */
-        'prefix' => 'tenant',
+        'prefix' => 'noovapos_tenant_',
         'suffix' => '',
 
         /**

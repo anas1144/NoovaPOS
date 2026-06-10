@@ -13,7 +13,7 @@ export const fetchTopSellingReport =
         }
         let url = apiBaseURL.TOP_SELLING_PRODUCT_REPORT;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

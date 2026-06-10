@@ -83,8 +83,12 @@ tailwind.config = {
     <div class="hidden md:flex items-center gap-8">
       <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="#features">Features</a>
       <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="#business-types">Business Types</a>
+      {{-- Dynamic CMS menu (shop-type pages, FBR, etc.) managed by the super admin --}}
+      @foreach(($cmsMenu ?? []) as $cm)
+        <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="/p/{{ $cm->slug }}">{{ $cm->title }}</a>
+      @endforeach
       <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="#pricing">Pricing</a>
-      <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="#fbr">FBR Pakistan</a>
+      <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="/blog">Blog</a>
       <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="#contact">Contact</a>
     </div>
 

@@ -51,6 +51,7 @@ class TenantOnboardingService
                 'phone' => $input['phone'] ?? null,
                 'password' => Hash::make($input['password']),
                 'tenant_id' => $tenant->id,
+                'country' => $input['country'] ?? null,
             ]);
 
             $ownerRole = Role::firstOrCreate([

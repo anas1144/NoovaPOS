@@ -48,7 +48,7 @@ export const getFormattedMessage = (id) => {
 
 export const getFormattedOptions = (options) => {
     const intl = useIntl();
-    const copyOptions = _.cloneDeep(options);
+    const copyOptions = JSON.parse(JSON.stringify(options));
     copyOptions.map(
         (option) =>
             (option.name = intl.formatMessage({

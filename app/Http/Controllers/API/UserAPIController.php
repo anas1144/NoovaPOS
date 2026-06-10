@@ -145,20 +145,22 @@ class UserAPIController extends AppBaseController
     {
         $user = Auth::user();
 
-        if ($user->hasRole(Role::ADMIN)) {
+        // Platform super-admin has no tenant context — skip store checks entirely
+        if ($user->hasRole(Role::SUPER_ADMIN) || $user->hasRole(Role::ADMIN)) {
             $storeModal = false;
         } else {
-            if (Store::where('tenant_id', $user->tenant_id)->where('status', 1)->exists()) {
+            if ($user->tenant_id && Store::where('tenant_id', $user->tenant_id)->where('status', 1)->exists()) {
                 $storeModal = false;
             } else {
                 $userStores = UserStore::where('user_id', $user->id)->get();
                 if ($userStores->count() > 0) {
+                    $storeModal = false; // default, may be overridden below
                     foreach ($userStores as $userStore) {
-                        if ($userStore->store->status == 1) {
+                        if ($userStore->store && $userStore->store->status == 1) {
                             $storeModal = false;
-                            $user->update([
-                                'tenant_id' => $userStore->store->tenant_id
-                            ]);
+                            if (! $user->tenant_id) {
+                                $user->update(['tenant_id' => $userStore->store->tenant_id]);
+                            }
                             break;
                         } else {
                             $userStore->delete();
@@ -173,25 +175,29 @@ class UserAPIController extends AppBaseController
 
         $userPermissions = $user->getAllPermissions()->pluck('name')->toArray();
 
-        $composerFile = file_get_contents('../composer.json');
-        $composerData = json_decode($composerFile, true);
-        $currentVersion = isset($composerData['version']) ? $composerData['version'] : '';
-        $dateFormat = getSettingValue('date_format');
+        // Safely read composer version
+        $composerPath = base_path('composer.json');
+        $currentVersion = '';
+        if (file_exists($composerPath)) {
+            $composerData = json_decode(file_get_contents($composerPath), true);
+            $currentVersion = $composerData['version'] ?? '';
+        }
 
+        $dateFormat  = getSettingValue('date_format');
         $openRegister = POSRegister::where('user_id', Auth::id())
             ->whereNull('closed_at')
             ->exists();
 
         return $this->sendResponse([
-            'store_name' => getActiveStoreName(),
-            'store_logo' => getLogoUrl(),
-            'permissions' => $userPermissions,
-            'version' => $currentVersion,
-            'date_format' => $dateFormat,
-            'store_modal' => $storeModal,
-            'is_version' => getSettingValue('show_version_on_footer'),
-            'is_currency_right' => getSettingValue('is_currency_right'),
-            'open_register' => $openRegister ? false : true,
+            'store_name'       => getActiveStoreName(),
+            'store_logo'       => getLogoUrl(),
+            'permissions'      => $userPermissions,
+            'version'          => $currentVersion,
+            'date_format'      => $dateFormat,
+            'store_modal'      => $storeModal,
+            'is_version'       => getSettingValue('show_version_on_footer'),
+            'is_currency_right'=> getSettingValue('is_currency_right'),
+            'open_register'    => $openRegister ? false : true,
         ], 'Config retrieved successfully.');
     }
 }

@@ -12,7 +12,7 @@ export const productQuantityReportAction =
         }
         let url =
             apiBaseURL.PRODUCT_STOCK_REPORT + `${id !== null ? "/" + id : ""}`;
-        if (!_.isEmpty(filter) && (filter.page || filter.pageSize)) {
+        if ((filter && Object.keys(filter).length > 0) && (filter.page || filter.pageSize)) {
             url += requestParam(filter, false, false, true, url);
         }
         await apiConfig

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\CentralConnection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Subscription extends BaseModel
 {
-    use HasFactory;
+    use HasFactory, CentralConnection;
 
     protected $table = 'subscriptions';
 

@@ -24,7 +24,7 @@ export const fetchBaseUnits =
         }
         let url = apiBaseURL.BASE_UNITS;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

@@ -10,6 +10,8 @@ import {
     addPlan,
     editPlan,
 } from "../../store/action/platformAction";
+import apiConfig from "../../config/apiConfig";
+import { apiBaseURL } from "../../constants";
 
 const FEATURE_FLAGS = [
     "retail_pos",
@@ -42,7 +44,19 @@ const PlanForm = ({ show, isEdit, data, onHide }) => {
         max_products: 0,
         status: true,
         features: [],
+        allowed_countries: [],
+        offers_separate_db: false,
+        separate_db_price: 0,
+        separate_db_max_users: 0,
     });
+    const [countries, setCountries] = useState([]);
+
+    useEffect(() => {
+        apiConfig
+            .get(apiBaseURL.PUBLIC_COUNTRIES)
+            .then((res) => setCountries(res.data?.data || []))
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         setForm({
@@ -59,8 +73,20 @@ const PlanForm = ({ show, isEdit, data, onHide }) => {
             max_products: data?.max_products || 0,
             status: data?.status !== false,
             features: data?.features || [],
+            allowed_countries: data?.allowed_countries || [],
+            offers_separate_db: data?.offers_separate_db || false,
+            separate_db_price: data?.separate_db_price || 0,
+            separate_db_max_users: data?.separate_db_max_users || 0,
         });
     }, [data, show]);
+
+    const toggleCountry = (code) =>
+        setForm((s) => ({
+            ...s,
+            allowed_countries: s.allowed_countries.includes(code)
+                ? s.allowed_countries.filter((x) => x !== code)
+                : [...s.allowed_countries, code],
+        }));
 
     const setF = (k) => (e) =>
         setForm((f) => ({
@@ -189,6 +215,57 @@ const PlanForm = ({ show, isEdit, data, onHide }) => {
                             ))}
                         </div>
                     </div>
+                    <div className="col-md-12 mb-3">
+                        <label className="form-label">
+                            Allowed Countries{" "}
+                            <span className="text-muted">
+                                (leave empty = available to all countries)
+                            </span>
+                        </label>
+                        <div
+                            className="d-flex flex-wrap gap-2 border rounded p-2"
+                            style={{ maxHeight: 160, overflowY: "auto" }}
+                        >
+                            {countries.map((c) => (
+                                <label
+                                    key={c.id}
+                                    className={`badge ${
+                                        form.allowed_countries.includes(c.short_code)
+                                            ? "bg-primary"
+                                            : "bg-light-secondary text-dark"
+                                    } p-2 cursor-pointer`}
+                                    onClick={() => toggleCountry(c.short_code)}
+                                >
+                                    {c.short_code} · {c.name}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="col-md-12 mb-2">
+                        <label className="form-check form-switch form-switch-sm">
+                            <input
+                                type="checkbox"
+                                className="form-check-input me-3"
+                                checked={!!form.offers_separate_db}
+                                onChange={(e) =>
+                                    setForm((f) => ({ ...f, offers_separate_db: e.target.checked }))
+                                }
+                            />
+                            <span className="ms-2">Offer isolated (separate) database</span>
+                        </label>
+                    </div>
+                    {form.offers_separate_db && (
+                        <>
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Separate DB price</label>
+                                <input type="number" min="0" step="0.01" className="form-control" value={form.separate_db_price} onChange={setF("separate_db_price")} />
+                            </div>
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Separate DB user allowance</label>
+                                <input type="number" min="0" className="form-control" value={form.separate_db_max_users} onChange={setF("separate_db_max_users")} />
+                            </div>
+                        </>
+                    )}
                     <div className="col-md-12 mb-3">
                         <label className="form-check form-switch form-switch-sm">
                             <input

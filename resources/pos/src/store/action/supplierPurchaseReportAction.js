@@ -17,7 +17,7 @@ export const fetchSupplierPurchaseReport =
         }
         let url = apiBaseURL.SUPPLIER_PURCHASE_REPORT + "/" + id;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||
@@ -60,7 +60,7 @@ export const fetchSupplierPurchaseReturnReport =
         }
         let url = apiBaseURL.SUPPLIER_PURCHASE_RETURN_REPORT + "/" + id;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

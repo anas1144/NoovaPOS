@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateShopRequest;
 use App\Http\Resources\ShopCollection;
 use App\Http\Resources\ShopResource;
 use App\Models\Shop;
+use App\Models\Store;
 use App\Models\UserShop;
 use App\Repositories\ShopRepository;
 use App\Services\TenantSubscriptionService;
@@ -48,7 +49,13 @@ class ShopAPIController extends AppBaseController
         try {
             DB::beginTransaction();
             $this->tenantSubscriptionService->assertWithinLimit(currentTenantId(), 'shops');
-            $shop = $this->shopRepository->create($request->validated());
+            $data = $request->validated();
+            // Lock the shop's type to its parent store's type.
+            $store = Store::find($data['store_id'] ?? null);
+            if ($store) {
+                $data['shop_type'] = $store->shop_type ?: 'retail';
+            }
+            $shop = $this->shopRepository->create($data);
             DB::commit();
 
             return new ShopResource($shop);
@@ -67,7 +74,13 @@ class ShopAPIController extends AppBaseController
     {
         try {
             DB::beginTransaction();
-            $shop = $this->shopRepository->update($request->validated(), $shop->id);
+            $data = $request->validated();
+            // Keep the shop's type locked to its store's type.
+            $store = Store::find($data['store_id'] ?? $shop->store_id);
+            if ($store) {
+                $data['shop_type'] = $store->shop_type ?: 'retail';
+            }
+            $shop = $this->shopRepository->update($data, $shop->id);
             DB::commit();
 
             return new ShopResource($shop);

@@ -9,7 +9,7 @@ export const fetchAllSalePurchaseCount = (filter) => async (dispatch) => {
     dispatch(setLoading(true));
     let url = apiBaseURL.ALL_SALE_PURCHASE
     if (
-        !_.isEmpty(filter)
+        filter && Object.keys(filter).length > 0
     ) {
         url += requestParam(filter, null, null, null, url);
     }

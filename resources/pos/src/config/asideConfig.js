@@ -51,6 +51,135 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
 
     const config = [];
 
+    // ─────────────────────────────────────────────────────────────────
+    // PLATFORM SUPER ADMIN — system-only menu.
+    // The super admin operates the SaaS platform, not an individual shop,
+    // so all tenant-level operational menus (products, sales, purchases,
+    // stores, shops, reports, etc.) are intentionally hidden. They only
+    // get tenant management + platform/system administration.
+    // ─────────────────────────────────────────────────────────────────
+    if (isSuperAdmin) {
+        config.push({ type: "section", label: "Platform (SaaS)" });
+
+        config.push({
+            title: "Platform (SaaS)",
+            name: "platform",
+            fontIcon: <FontAwesomeIcon icon={faCrown} />,
+            to: "/app/platform/dashboard",
+            class: "d-flex",
+            is_submenu: "true",
+            permission: "",
+            subPath: {
+                platformDashboardSubPath:     "/app/platform/dashboard",
+                platformTenantsSubPath:       "/app/platform/tenants",
+                platformPlansSubPath:         "/app/platform/plans",
+                platformRoleTemplatesSubPath: "/app/platform/role-templates",
+                platformSubscriptionsSubPath: "/app/platform/subscriptions",
+                platformPaymentsSubPath:      "/app/platform/payments",
+                platformBankAccountsSubPath:  "/app/platform/bank-accounts",
+                platformBillingSettingsSubPath: "/app/platform/billing-settings",
+                platformShopTypesSubPath:     "/app/platform/shop-types",
+                platformAuditLogsSubPath:     "/app/platform/audit-logs",
+                platformBackupsSubPath:       "/app/platform/backups",
+            },
+            newRoute: [
+                { title: "Platform Dashboard", to: "/app/platform/dashboard",     fontIcon: <FontAwesomeIcon icon={faPieChart} />,      class: "d-flex", permission: "" },
+                { title: "Tenants",            to: "/app/platform/tenants",       fontIcon: <FontAwesomeIcon icon={faBuilding} />,      class: "d-flex", permission: "" },
+                { title: "Plans",              to: "/app/platform/plans",         fontIcon: <FontAwesomeIcon icon={faClipboardList} />, class: "d-flex", permission: "" },
+                { title: "Roles & Permissions",to: "/app/platform/role-templates",fontIcon: <FontAwesomeIcon icon={faShieldHalved} />,  class: "d-flex", permission: "" },
+                { title: "Subscriptions",      to: "/app/platform/subscriptions", fontIcon: <FontAwesomeIcon icon={faMoneyCheck} />,    class: "d-flex", permission: "" },
+                { title: "Payments",           to: "/app/platform/payments",      fontIcon: <FontAwesomeIcon icon={faMoneyBillTransfer} />, class: "d-flex", permission: "" },
+                { title: "Bank Accounts",      to: "/app/platform/bank-accounts", fontIcon: <FontAwesomeIcon icon={faBuildingColumns} />, class: "d-flex", permission: "" },
+                { title: "Billing Settings",   to: "/app/platform/billing-settings", fontIcon: <FontAwesomeIcon icon={faGear} />,        class: "d-flex", permission: "" },
+                { title: "Shop Types",         to: "/app/platform/shop-types",    fontIcon: <FontAwesomeIcon icon={faShop} />,          class: "d-flex", permission: "" },
+                { title: "Features",           to: "/app/platform/features",      fontIcon: <FontAwesomeIcon icon={faLayerGroup} />,    class: "d-flex", permission: "" },
+                { title: "CMS Pages",          to: "/app/platform/cms-pages",     fontIcon: <FontAwesomeIcon icon={faFile} />,          class: "d-flex", permission: "" },
+                { title: "Blog",               to: "/app/platform/blog",          fontIcon: <FontAwesomeIcon icon={faFileLines} />,     class: "d-flex", permission: "" },
+                { title: "Audit Logs",         to: "/app/platform/audit-logs",    fontIcon: <FontAwesomeIcon icon={faFileLines} />,     class: "d-flex", permission: "" },
+                { title: "Tenant Backups",     to: "/app/platform/backups",       fontIcon: <FontAwesomeIcon icon={faDatabase} />,      class: "d-flex", permission: "" },
+            ],
+        });
+
+        config.push({ type: "section", label: "Offline & Sync" });
+
+        config.push({
+            title: "Offline Sync",
+            name: "offline-sync",
+            fontIcon: <FontAwesomeIcon icon={faCloud} />,
+            to: "/app/offline-devices",
+            class: "d-flex",
+            is_submenu: "true",
+            permission: "",
+            subPath: { offlineDevicesSubPath: "/app/offline-devices", syncQueueSubPath: "/app/sync-queue" },
+            newRoute: [
+                { title: "Offline Devices", to: "/app/offline-devices", fontIcon: <FontAwesomeIcon icon={faServer} />, class: "d-flex", permission: "" },
+                { title: "Sync Queue",      to: "/app/sync-queue",      fontIcon: <FontAwesomeIcon icon={faRotate} />, class: "d-flex", permission: "" },
+            ],
+        });
+
+        config.push({ type: "section", label: "FBR Pakistan" });
+
+        config.push({
+            title: "FBR (Pakistan)",
+            name: "fbr",
+            fontIcon: <FontAwesomeIcon icon={faFileShield} />,
+            to: "/app/fbr-profiles",
+            class: "d-flex",
+            is_submenu: "true",
+            permission: "",
+            subPath: { fbrProfilesSubPath: "/app/fbr-profiles", fbrInvoicesSubPath: "/app/fbr-invoices" },
+            newRoute: [
+                { title: "FBR Profiles",  to: "/app/fbr-profiles", fontIcon: <FontAwesomeIcon icon={faFileShield} />, class: "d-flex", permission: "" },
+                { title: "Invoice Queue", to: "/app/fbr-invoices",  fontIcon: <FontAwesomeIcon icon={faPaperPlane} />, class: "d-flex", permission: "" },
+            ],
+        });
+
+        config.push({ type: "section", label: "System" });
+
+        // Centralized configuration that used to live under each tenant. The
+        // super admin manages these system-wide.
+        config.push({
+            title: "System Settings",
+            name: "system-settings",
+            fontIcon: <FontAwesomeIcon icon={faGear} />,
+            to: "/app/currencies",
+            class: "d-flex",
+            is_submenu: "true",
+            permission: "",
+            subPath: {
+                currenciesSubPath:   "/app/currencies",
+                languagesSubPath:    "/app/languages",
+                paymentMethodsSubPath: "/app/payment-methods",
+                emailTemplateSubPath: "/app/email-templates",
+                smsTemplateSubPath:  "/app/sms-templates",
+                rolesSubPath:        "/app/roles",
+                settingsSubPath:     "/app/settings",
+                dualScreenSubPath:   "/app/dual-screen-settings",
+            },
+            newRoute: [
+                { title: "currencies.title",        to: "/app/currencies",            fontIcon: <FontAwesomeIcon icon={faDollarSign} />,    class: "d-flex", permission: "" },
+                { title: "languages.title",         to: "/app/languages",             fontIcon: <FontAwesomeIcon icon={faLanguage} />,      class: "d-flex", permission: "" },
+                { title: "payment.methods.title",   to: "/app/payment-methods",       fontIcon: <FontAwesomeIcon icon={faMoneyCheck} />,    class: "d-flex", permission: "" },
+                { title: "email-template.title",    to: "/app/email-templates",       fontIcon: <FontAwesomeIcon icon={faEnvelope} />,      class: "d-flex", permission: "" },
+                { title: "sms-template.title",      to: "/app/sms-templates",         fontIcon: <FontAwesomeIcon icon={faSms} />,           class: "d-flex", permission: "" },
+                { title: "roles.permissions.title", to: "/app/roles",                 fontIcon: <FontAwesomeIcon icon={faShieldHalved} />,  class: "d-flex", permission: "" },
+                { title: "settings.title",          to: "/app/settings",              fontIcon: <FontAwesomeIcon icon={faGear} />,          class: "d-flex", permission: "" },
+                { title: "dual.screen.settings.title", to: "/app/dual-screen-settings", fontIcon: <FontAwesomeIcon icon={faDisplay} />,    class: "d-flex", permission: "" },
+            ],
+        });
+
+        config.push({
+            title: "Notifications",
+            name: "notifications",
+            fontIcon: <FontAwesomeIcon icon={faBell} />,
+            to: "/app/notifications",
+            class: "d-flex",
+            permission: "",
+        });
+
+        return config;
+    }
+
     // ── MAIN ─────────────────────────────────────────────────────────
     config.push({ type: "section", label: "Main" });
 
@@ -71,6 +200,18 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
         title: "header.pos.title",
         permission: Permissions.MANAGE_POS_SCREEN,
     });
+
+    // Billing & subscription — tenant owner only (manages the tenant's plan).
+    if (isTenantOwner) {
+        config.push({
+            title: "Billing & Plan",
+            name: "billing",
+            fontIcon: <FontAwesomeIcon icon={faMoneyCheck} />,
+            to: "/app/billing",
+            class: "d-flex",
+            permission: "",
+        });
+    }
 
     // ── INVENTORY ────────────────────────────────────────────────────
     if (canManage || isInventory) {
@@ -130,6 +271,15 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
             class: "d-flex",
             permission: Permissions.MANAGE_TRANSFERS,
         });
+
+        config.push({
+            title: "Deals / Combos",
+            name: "deals",
+            fontIcon: <FontAwesomeIcon icon={faBasketShopping} />,
+            to: "/app/deals",
+            class: "d-flex",
+            permission: "",
+        });
     }
 
     // ── SALES ────────────────────────────────────────────────────────
@@ -163,9 +313,27 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
         title: "pos.register.title",
         name: "pos-register",
         fontIcon: <FontAwesomeIcon icon={faCashRegister} />,
-        to: "/app/pos-register",
+        to: "/app/report/register",
         class: "d-flex",
         permission: Permissions.MANAGE_POS_SCREEN,
+    });
+
+    config.push({
+        title: "Deliveries",
+        name: "deliveries",
+        fontIcon: <FontAwesomeIcon icon={faTruckMoving} />,
+        to: "/app/deliveries",
+        class: "d-flex",
+        permission: "",
+    });
+
+    config.push({
+        title: "Customer Orders",
+        name: "customer-orders",
+        fontIcon: <FontAwesomeIcon icon={faDisplay} />,
+        to: "/app/customer-orders",
+        class: "d-flex",
+        permission: "",
     });
 
     // ── PURCHASES ────────────────────────────────────────────────────
@@ -330,14 +498,16 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
             is_submenu: "true",
             permission: "",
             subPath: {
-                restaurantHallsSubPath:  "/app/restaurant/halls",
-                restaurantTablesSubPath: "/app/restaurant/tables",
-                restaurantKotsSubPath:   "/app/restaurant/kots",
+                restaurantHallsSubPath:    "/app/restaurant/halls",
+                restaurantTablesSubPath:   "/app/restaurant/tables",
+                restaurantKitchensSubPath: "/app/restaurant/kitchens",
+                restaurantKotsSubPath:     "/app/restaurant/kots",
             },
             newRoute: [
-                { title: "Halls",         to: "/app/restaurant/halls",  fontIcon: <FontAwesomeIcon icon={faBuilding} />,   class: "d-flex", permission: "" },
-                { title: "Tables",        to: "/app/restaurant/tables", fontIcon: <FontAwesomeIcon icon={faChair} />,      class: "d-flex", permission: "" },
-                { title: "KOT (Kitchen)", to: "/app/restaurant/kots",   fontIcon: <FontAwesomeIcon icon={faKitchenSet} />, class: "d-flex", permission: "" },
+                { title: "Halls",         to: "/app/restaurant/halls",    fontIcon: <FontAwesomeIcon icon={faBuilding} />,   class: "d-flex", permission: "" },
+                { title: "Tables",        to: "/app/restaurant/tables",   fontIcon: <FontAwesomeIcon icon={faChair} />,      class: "d-flex", permission: "" },
+                { title: "Kitchens",      to: "/app/restaurant/kitchens", fontIcon: <FontAwesomeIcon icon={faKitchenSet} />, class: "d-flex", permission: "" },
+                { title: "Kitchen Display", to: "/app/restaurant/kots",   fontIcon: <FontAwesomeIcon icon={faKitchenSet} />, class: "d-flex", permission: "" },
             ],
         });
     }
@@ -396,8 +566,49 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
         });
     }
 
-    // ── OFFLINE & SYNC ────────────────────────────────────────────────
-    if (isSuperAdmin || isTenantOwner || isBranchManager) {
+    // ── ATTENDANCE (POS-integrated; any tenant user who clocks in) ────
+    if (!isSuperAdmin && hasPerm("attendance.view")) {
+        config.push({ type: "section", label: "Attendance" });
+
+        config.push({
+            title: "Attendance",
+            name: "attendance",
+            fontIcon: <FontAwesomeIcon icon={faCalendarCheck} />,
+            to: "/app/attendance/checkin",
+            class: "d-flex",
+            is_submenu: "true",
+            permission: "attendance.view",
+            subPath: {
+                attendanceDashboardSubPath:   "/app/attendance/dashboard",
+                attendanceCheckinSubPath:     "/app/attendance/checkin",
+                attendanceLiveSubPath:        "/app/attendance/live",
+                attendanceTasksSubPath:       "/app/attendance/tasks",
+                attendanceHistorySubPath:     "/app/attendance/history",
+                attendanceFaceSubPath:        "/app/attendance/biometrics/face",
+                attendanceFingerprintSubPath: "/app/attendance/biometrics/fingerprint",
+                attendanceDevicesSubPath:     "/app/attendance/devices",
+                attendanceReportsSubPath:     "/app/attendance/reports",
+                attendanceRequestsSubPath:    "/app/attendance/requests",
+                attendanceSettingsSubPath:    "/app/attendance/settings",
+            },
+            newRoute: [
+                { title: "Dashboard",            to: "/app/attendance/dashboard",              fontIcon: <FontAwesomeIcon icon={faPieChart} />,      class: "d-flex", permission: "attendance.dashboard" },
+                { title: "Check In / Check Out", to: "/app/attendance/checkin",                fontIcon: <FontAwesomeIcon icon={faCalendarCheck} />, class: "d-flex", permission: "attendance.checkin" },
+                { title: "Live Attendance",      to: "/app/attendance/live",                   fontIcon: <FontAwesomeIcon icon={faDisplay} />,       class: "d-flex", permission: "attendance.dashboard" },
+                { title: "Tasks",                to: "/app/attendance/tasks",                  fontIcon: <FontAwesomeIcon icon={faClipboardList} />, class: "d-flex", permission: "attendance.task.view" },
+                { title: "Attendance History",   to: "/app/attendance/history",                fontIcon: <FontAwesomeIcon icon={faList} />,          class: "d-flex", permission: "attendance.view" },
+                { title: "Face Enrollment",      to: "/app/attendance/biometrics/face",        fontIcon: <FontAwesomeIcon icon={faUser} />,          class: "d-flex", permission: "attendance.face.view" },
+                { title: "Fingerprint Enrollment", to: "/app/attendance/biometrics/fingerprint", fontIcon: <FontAwesomeIcon icon={faIdBadge} />,    class: "d-flex", permission: "attendance.fingerprint.view" },
+                { title: "Devices",              to: "/app/attendance/devices",                fontIcon: <FontAwesomeIcon icon={faServer} />,        class: "d-flex", permission: "attendance.device.view" },
+                { title: "Reports",              to: "/app/attendance/reports",                fontIcon: <FontAwesomeIcon icon={faChartColumn} />,   class: "d-flex", permission: "attendance.report.view" },
+                { title: "Requests",             to: "/app/attendance/requests",               fontIcon: <FontAwesomeIcon icon={faPaperPlane} />,    class: "d-flex", permission: "attendance.view" },
+                { title: "Settings",             to: "/app/attendance/settings",               fontIcon: <FontAwesomeIcon icon={faGear} />,          class: "d-flex", permission: "attendance.settings.view" },
+            ],
+        });
+    }
+
+    // ── OFFLINE & SYNC (super admin only) ─────────────────────────────
+    if (isSuperAdmin) {
         config.push({ type: "section", label: "Offline & Sync" });
 
         config.push({
@@ -416,8 +627,8 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
         });
     }
 
-    // ── FBR PAKISTAN (tenant_owner / super_admin) ─────────────────────
-    if (isSuperAdmin || isTenantOwner) {
+    // ── FBR PAKISTAN (super admin only) ───────────────────────────────
+    if (isSuperAdmin) {
         config.push({ type: "section", label: "FBR Pakistan" });
 
         config.push({
@@ -452,7 +663,12 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
                 platformDashboardSubPath:     "/app/platform/dashboard",
                 platformTenantsSubPath:       "/app/platform/tenants",
                 platformPlansSubPath:         "/app/platform/plans",
+                platformRoleTemplatesSubPath: "/app/platform/role-templates",
                 platformSubscriptionsSubPath: "/app/platform/subscriptions",
+                platformPaymentsSubPath:      "/app/platform/payments",
+                platformBankAccountsSubPath:  "/app/platform/bank-accounts",
+                platformBillingSettingsSubPath: "/app/platform/billing-settings",
+                platformShopTypesSubPath:     "/app/platform/shop-types",
                 platformAuditLogsSubPath:     "/app/platform/audit-logs",
                 platformBackupsSubPath:       "/app/platform/backups",
             },
@@ -460,7 +676,15 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
                 { title: "Platform Dashboard", to: "/app/platform/dashboard",     fontIcon: <FontAwesomeIcon icon={faPieChart} />,      class: "d-flex", permission: "" },
                 { title: "Tenants",            to: "/app/platform/tenants",       fontIcon: <FontAwesomeIcon icon={faBuilding} />,      class: "d-flex", permission: "" },
                 { title: "Plans",              to: "/app/platform/plans",         fontIcon: <FontAwesomeIcon icon={faClipboardList} />, class: "d-flex", permission: "" },
+                { title: "Roles & Permissions",to: "/app/platform/role-templates",fontIcon: <FontAwesomeIcon icon={faShieldHalved} />,  class: "d-flex", permission: "" },
                 { title: "Subscriptions",      to: "/app/platform/subscriptions", fontIcon: <FontAwesomeIcon icon={faMoneyCheck} />,    class: "d-flex", permission: "" },
+                { title: "Payments",           to: "/app/platform/payments",      fontIcon: <FontAwesomeIcon icon={faMoneyBillTransfer} />, class: "d-flex", permission: "" },
+                { title: "Bank Accounts",      to: "/app/platform/bank-accounts", fontIcon: <FontAwesomeIcon icon={faBuildingColumns} />, class: "d-flex", permission: "" },
+                { title: "Billing Settings",   to: "/app/platform/billing-settings", fontIcon: <FontAwesomeIcon icon={faGear} />,        class: "d-flex", permission: "" },
+                { title: "Shop Types",         to: "/app/platform/shop-types",    fontIcon: <FontAwesomeIcon icon={faShop} />,          class: "d-flex", permission: "" },
+                { title: "Features",           to: "/app/platform/features",      fontIcon: <FontAwesomeIcon icon={faLayerGroup} />,    class: "d-flex", permission: "" },
+                { title: "CMS Pages",          to: "/app/platform/cms-pages",     fontIcon: <FontAwesomeIcon icon={faFile} />,          class: "d-flex", permission: "" },
+                { title: "Blog",               to: "/app/platform/blog",          fontIcon: <FontAwesomeIcon icon={faFileLines} />,     class: "d-flex", permission: "" },
                 { title: "Audit Logs",         to: "/app/platform/audit-logs",    fontIcon: <FontAwesomeIcon icon={faFileLines} />,     class: "d-flex", permission: "" },
                 { title: "Tenant Backups",     to: "/app/platform/backups",       fontIcon: <FontAwesomeIcon icon={faDatabase} />,      class: "d-flex", permission: "" },
             ],
@@ -499,99 +723,35 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
         });
 
         config.push({
-            title: "roles.permissions.title",
-            name: "roles",
-            fontIcon: <FontAwesomeIcon icon={faShieldHalved} />,
-            to: "/app/roles",
-            class: "d-flex",
-            permission: Permissions.MANAGE_ROLES,
-        });
-
-        config.push({
-            title: "currencies.title",
-            name: "currencies",
-            fontIcon: <FontAwesomeIcon icon={faDollarSign} />,
-            to: "/app/currencies",
-            class: "d-flex",
-            permission: Permissions.MANAGE_CURRENCY,
-        });
-
-        config.push({
-            title: "languages.title",
-            name: "Languages",
-            fontIcon: <FontAwesomeIcon icon={faLanguage} />,
-            to: "/app/languages",
-            class: "d-flex",
-            permission: Permissions.MANAGE_LANGUAGES,
-        });
-
-        config.push({
-            title: "template.title",
-            name: "template",
-            fontIcon: <FontAwesomeIcon icon={faFile} />,
-            to: "/app/email-templates",
-            class: "d-flex",
-            is_submenu: "true",
-            permission: Permissions.MANAGE_EMAIL_TEMPLATES,
-            subPath: {
-                emailTemplateSubPath: "/app/email-templates",
-                smsTemplateSubPath:   "/app/sms-templates",
-                smsApiSubPath:        "/app/sms-api",
-            },
-            newRoute: [
-                { title: "email-template.title", to: "/app/email-templates", fontIcon: <FontAwesomeIcon icon={faEnvelope} />, class: "d-flex", permission: Permissions.MANAGE_EMAIL_TEMPLATES },
-                { title: "sms-template.title",   to: "/app/sms-templates",   fontIcon: <FontAwesomeIcon icon={faSms} />,      class: "d-flex", permission: Permissions.MANAGE_SMS_TEMPLATES },
-                { title: "sms-api.title",        to: "/app/sms-api",         fontIcon: <FontAwesomeIcon icon={faCube} />,     class: "d-flex", permission: Permissions.MANAGE_SMS_API },
-            ],
-        });
-
-        config.push({
-            title: "payment.methods.title",
-            name: "payment-methods",
-            fontIcon: <FontAwesomeIcon icon={faMoneyCheck} />,
-            to: "/app/payment-methods",
+            title: "Store Features",
+            name: "store-features",
+            fontIcon: <FontAwesomeIcon icon={faLayerGroup} />,
+            to: "/app/store-features",
             class: "d-flex",
             permission: "",
         });
 
         config.push({
-            title: "dual.screen.settings.title",
-            name: "dual-screen-settings",
-            fontIcon: <FontAwesomeIcon icon={faDisplay} />,
-            to: "/app/dual-screen-settings",
+            title: "Price Tiers",
+            name: "price-tiers",
+            fontIcon: <FontAwesomeIcon icon={faDollarSign} />,
+            to: "/app/price-tiers",
             class: "d-flex",
-            permission: Permissions.MANAGE_POS_SCREEN,
+            permission: "",
         });
 
         config.push({
-            title: "settings.title",
-            name: "settings",
-            fontIcon: <FontAwesomeIcon icon={faGear} />,
-            to: "/app/settings",
-            prefixesPath:        "/app/prefixes",
-            mailSettingsPath:    "/app/mail-settings",
-            receiptSettingsPath: "/app/receipt-settings",
-            taxesPath:           "/app/taxes",
-            posSettingsPath:     "/app/pos-settings",
+            title: "Customer Displays",
+            name: "customer-displays",
+            fontIcon: <FontAwesomeIcon icon={faDisplay} />,
+            to: "/app/customer-displays",
             class: "d-flex",
-            isSamePrefix: "true",
-            permission: Permissions.MANAGE_SETTING,
-            subTitles: [
-                { title: "prefix.title" },
-                { title: "mail-settings.title" },
-                { title: "receipt-settings.title" },
-                { title: "pos.settings.title" },
-                { title: "taxes.title" },
-            ],
-            items: [
-                { title: getFormattedMessage("settings.title"),         to: "/app/settings" },
-                { title: getFormattedMessage("prefix.title"),           to: "/app/prefixes" },
-                { title: getFormattedMessage("mail-settings.title"),    to: "/app/mail-settings" },
-                { title: getFormattedMessage("receipt-settings.title"), to: "/app/receipt-settings" },
-                { title: getFormattedMessage("pos.settings.title"),     to: "/app/pos-settings" },
-                { title: getFormattedMessage("taxes.title"),            to: "/app/taxes" },
-            ],
+            permission: "",
         });
+
+        // Roles, Currencies, Languages, Templates, Payment Methods, Dual Screen
+        // and Settings are managed centrally by the super admin (System Settings),
+        // so they are intentionally not shown to tenants here.
     }
 
     return config;

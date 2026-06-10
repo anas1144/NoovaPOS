@@ -72,6 +72,14 @@ class DefaultRoleSeeder extends Seeder
                 'name'         => AppRole::DELIVERY_STAFF,
                 'display_name' => 'Delivery Staff',
             ],
+            [
+                'name'         => AppRole::KITCHEN,
+                'display_name' => 'Kitchen',
+            ],
+            [
+                'name'         => AppRole::DELIVERY_BOY,
+                'display_name' => 'Delivery Boy',
+            ],
         ];
 
         // Create roles that do not exist yet
@@ -188,6 +196,34 @@ class DefaultRoleSeeder extends Seeder
         $deliveryRole = Role::whereName(AppRole::DELIVERY_STAFF)->first();
         if ($deliveryRole) {
             $deliveryRole->syncPermissions($deliveryPermissions);
+        }
+
+        // Kitchen – restaurant back-of-house: see the KOT queue / kitchen display
+        // and the products being prepared. Read-only on sales (no checkout).
+        $kitchenPermissions = Permission::where(function ($q) {
+            $q->where('name', 'like', 'view_product%')
+              ->orWhere('name', 'like', 'view_sale%')
+              ->orWhere('name', 'like', 'view_dashboard%');
+        })->pluck('name', 'id');
+
+        $kitchenRole = Role::whereName(AppRole::KITCHEN)->first();
+        if ($kitchenRole) {
+            $kitchenRole->syncPermissions($kitchenPermissions);
+        }
+
+        // Delivery boy – the rider who fulfils takeaway/delivery orders: view
+        // assigned deliveries + their customers only.
+        $deliveryBoyPermissions = Permission::where('name', 'like', 'view_%')
+            ->where(function ($q) {
+                $q->where('name', 'like', '%sale%')
+                  ->orWhere('name', 'like', '%customer%')
+                  ->orWhere('name', 'like', '%deliver%')
+                  ->orWhere('name', 'like', 'view_dashboard%');
+            })->pluck('name', 'id');
+
+        $deliveryBoyRole = Role::whereName(AppRole::DELIVERY_BOY)->first();
+        if ($deliveryBoyRole) {
+            $deliveryBoyRole->syncPermissions($deliveryBoyPermissions);
         }
     }
 }

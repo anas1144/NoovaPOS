@@ -36,6 +36,7 @@ class RestaurantAPIController extends AppBaseController
         $input = $request->validate([
             'store_id' => 'nullable|exists:stores,id',
             'shop_id' => 'nullable|exists:shops,id',
+            'kitchen_id' => 'nullable|exists:kitchens,id',
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:255',
             'floor' => 'nullable|integer|min:0',
@@ -51,6 +52,7 @@ class RestaurantAPIController extends AppBaseController
         $input = $request->validate([
             'store_id' => 'nullable|exists:stores,id',
             'shop_id' => 'nullable|exists:shops,id',
+            'kitchen_id' => 'nullable|exists:kitchens,id',
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:255',
             'floor' => 'nullable|integer|min:0',
@@ -139,10 +141,16 @@ class RestaurantAPIController extends AppBaseController
     public function tickets(Request $request): JsonResponse
     {
         $query = KitchenOrderTicket::query()->with(['items', 'table:id,name', 'waiter:id,first_name,last_name']);
-        foreach (['shop_id', 'status', 'table_id', 'order_type'] as $f) {
+        foreach (['shop_id', 'status', 'table_id', 'order_type', 'kitchen_id'] as $f) {
             if ($request->filled($f)) {
                 $query->where($f, $request->get($f));
             }
+        }
+
+        // A kitchen user only sees KOTs routed to their kitchen.
+        $user = $request->user();
+        if ($user && $user->hasRole(\App\Models\Role::KITCHEN) && $user->kitchen_id) {
+            $query->where('kitchen_id', $user->kitchen_id);
         }
         return $this->sendResponse(
             $query->orderByDesc('id')->paginate(getPageSize($request)),
@@ -166,10 +174,28 @@ class RestaurantAPIController extends AppBaseController
             'items.*.modifier' => 'nullable|string|max:1000',
         ]);
 
-        return DB::transaction(function () use ($input) {
+        // Default the waiter to the logged-in user (the one sending the order).
+        $input['waiter_id'] = $input['waiter_id'] ?? $request->user()?->id;
+
+        // Route the KOT to the waiter's assigned kitchen (fallback: the table's
+        // hall kitchen). This is the kitchen whose display the order shows on.
+        $kitchenId = null;
+        if (! empty($input['waiter_id'])) {
+            $kitchenId = \App\Models\User::withoutGlobalScope('tenant')
+                ->where('id', $input['waiter_id'])->value('kitchen_id');
+        }
+        if (! $kitchenId && ! empty($input['table_id'])) {
+            $hallId = RestaurantTable::where('id', $input['table_id'])->value('hall_id');
+            if ($hallId) {
+                $kitchenId = RestaurantHall::where('id', $hallId)->value('kitchen_id');
+            }
+        }
+
+        return DB::transaction(function () use ($input, $kitchenId) {
             $ticket = KitchenOrderTicket::create([
                 'store_id' => $input['store_id'] ?? null,
                 'shop_id' => $input['shop_id'] ?? null,
+                'kitchen_id' => $kitchenId,
                 'table_id' => $input['table_id'] ?? null,
                 'waiter_id' => $input['waiter_id'] ?? null,
                 'order_type' => $input['order_type'] ?? 'dine_in',
@@ -230,5 +256,66 @@ class RestaurantAPIController extends AppBaseController
         }
 
         return $this->sendResponse($ticket->refresh()->load('items'), 'KOT status updated.');
+    }
+
+    // -------------------- Kitchens --------------------
+    public function kitchens(Request $request): JsonResponse
+    {
+        $query = \App\Models\Kitchen::query()->with('store:id,name');
+        if ($request->filled('store_id')) {
+            $query->where('store_id', $request->get('store_id'));
+        }
+        return $this->sendResponse(
+            $query->orderBy('name')->get(),
+            'Kitchens retrieved successfully.'
+        );
+    }
+
+    public function storeKitchen(Request $request): JsonResponse
+    {
+        $input = $request->validate([
+            'store_id' => 'required|exists:stores,id',
+            'name'     => 'required|string|max:255',
+            'status'   => 'nullable|boolean',
+        ]);
+        $kitchen = \App\Models\Kitchen::create($input);
+        return $this->sendResponse($kitchen, 'Kitchen created successfully.');
+    }
+
+    public function updateKitchen(Request $request, \App\Models\Kitchen $kitchen): JsonResponse
+    {
+        $input = $request->validate([
+            'store_id' => 'nullable|exists:stores,id',
+            'name'     => 'required|string|max:255',
+            'status'   => 'nullable|boolean',
+        ]);
+        $kitchen->update($input);
+        return $this->sendResponse($kitchen->refresh(), 'Kitchen updated successfully.');
+    }
+
+    public function destroyKitchen(\App\Models\Kitchen $kitchen): JsonResponse
+    {
+        // Unlink waiters/halls pointing at this kitchen, then delete.
+        \App\Models\User::withoutGlobalScope('tenant')->where('kitchen_id', $kitchen->id)->update(['kitchen_id' => null]);
+        RestaurantHall::where('kitchen_id', $kitchen->id)->update(['kitchen_id' => null]);
+        $kitchen->delete();
+        return $this->sendSuccess('Kitchen deleted successfully.');
+    }
+
+    /**
+     * Assign (or clear) a waiter's kitchen — KOTs they send route there.
+     */
+    public function assignWaiterKitchen(Request $request): JsonResponse
+    {
+        $input = $request->validate([
+            'waiter_id'  => 'required|exists:users,id',
+            'kitchen_id' => 'nullable|exists:kitchens,id',
+        ]);
+
+        \App\Models\User::withoutGlobalScope('tenant')
+            ->where('id', $input['waiter_id'])
+            ->update(['kitchen_id' => $input['kitchen_id'] ?? null]);
+
+        return $this->sendSuccess('Waiter kitchen updated.');
     }
 }

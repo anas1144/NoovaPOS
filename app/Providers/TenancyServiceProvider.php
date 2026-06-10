@@ -25,18 +25,22 @@ class TenancyServiceProvider extends ServiceProvider
         return [
             // Tenant events
             Events\CreatingTenant::class => [],
+            // HYBRID DB-PER-TENANT: when a tenant is created, provision its own
+            // database, run the tenant migration set (database/migrations/tenant)
+            // and seed it. Runs synchronously so onboarding fails loudly if the
+            // database cannot be created. Switch shouldBeQueued(true) in production
+            // once a queue worker is running.
             Events\TenantCreated::class => [
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
-                    Jobs\SeedDatabase::class,
-
-                    // Your own jobs to prepare the tenant.
-                    // Provision API keys, create S3 buckets, anything you want!
-
+                    // Jobs\SeedDatabase::class, // Re-enable once business tables
+                    // (warehouses, settings, customers, …) are moved into
+                    // database/migrations/tenant. Until then TenantDatabaseSeeder
+                    // would reference tables that don't exist in the tenant DB.
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
-                })->shouldBeQueued(false), // `false` by default, but you probably want to make this `true` for production.
+                })->shouldBeQueued(false),
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],
@@ -70,9 +74,16 @@ class TenancyServiceProvider extends ServiceProvider
 
             // Tenancy events
             Events\InitializingTenancy::class => [],
-            Events\TenancyInitialized::class => [
-                // Listeners\BootstrapTenancy::class,
-            ],
+            Events\TenancyInitialized::class => array_filter([
+                // Runtime per-tenant DB switch. Disabled by default so the existing
+                // central-DB queries keep working. Set TENANCY_DB_SWITCH=true in .env
+                // ONLY after the business migrations have been relocated to
+                // database/migrations/tenant and every tenant DB has been migrated
+                // (php artisan tenants:migrate). When enabled, the connection is
+                // switched ONLY for tenants flagged uses_separate_db = true
+                // (see App\Listeners\ConditionalBootstrapTenancy).
+                env('TENANCY_DB_SWITCH', false) ? \App\Listeners\ConditionalBootstrapTenancy::class : null,
+            ]),
 
             Events\EndingTenancy::class => [],
             Events\TenancyEnded::class => [

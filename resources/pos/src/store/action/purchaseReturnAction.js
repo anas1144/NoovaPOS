@@ -24,7 +24,7 @@ export const fetchPurchasesReturn =
         }
         let url = apiBaseURL.PURCHASES_RETURN;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

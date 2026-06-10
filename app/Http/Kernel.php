@@ -39,11 +39,14 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            // Initialise tenancy for API calls coming from tenant subdomains.
-            // Central-domain requests (noovapos.local, superadmin.noovapos.local)
-            // are excluded automatically via central_domains in tenancy config.
-            \Stancl\Tenancy\Middleware\InitializeTenancyByDomainOrSubdomain::class,
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            // Smart tenancy initializer:
+            //   Central domains (noovapos.local, superadmin.noovapos.local) → pass through (no tenancy)
+            //   Tenant subdomains (abcgroup.noovapos.local, …) → initialize tenancy by subdomain
+            \App\Http\Middleware\InitializeTenancyForApi::class,
+            // NOTE: EnsureFrontendRequestsAreStateful is intentionally removed.
+            // This app uses Bearer token auth (token stored in cookie, sent as Authorization header).
+            // Stateful/CSRF mode is for cookie-session SPAs only. Having it here caused
+            // "CSRF token mismatch" on every login POST from noovapos.local.
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],

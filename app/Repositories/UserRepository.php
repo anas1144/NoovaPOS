@@ -6,6 +6,7 @@ use App\Models\MultiTenant;
 use App\Models\Role;
 use App\Models\Store;
 use App\Models\User;
+use App\Models\UserShop;
 use App\Models\UserStore;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -84,12 +85,35 @@ class UserRepository extends BaseRepository
                 ]);
             }
 
+            $this->syncUserShops($user, $input['shops'] ?? null);
+
             DB::commit();
 
             return $user;
         } catch (Exception $e) {
             DB::rollBack();
             throw new UnprocessableEntityHttpException($e->getMessage());
+        }
+    }
+
+    /**
+     * Replace a user's shop assignments (Store → Shop → User hierarchy).
+     */
+    private function syncUserShops(User $user, $shops): void
+    {
+        if (is_string($shops)) {
+            $shops = array_values(array_filter(array_map('trim', explode(',', $shops))));
+        }
+
+        if (! is_array($shops)) {
+            return; // not provided -> leave existing assignments untouched
+        }
+
+        UserShop::where('user_id', $user->id)->delete();
+        foreach ($shops as $shopId) {
+            if ($shopId !== '' && $shopId !== null) {
+                UserShop::create(['user_id' => $user->id, 'shop_id' => $shopId]);
+            }
         }
     }
 
@@ -133,6 +157,10 @@ class UserRepository extends BaseRepository
                 }
             } else {
                 UserStore::where('user_id', $user->id)->delete();
+            }
+
+            if (array_key_exists('shops', $input)) {
+                $this->syncUserShops($user, $input['shops']);
             }
 
             DB::commit();

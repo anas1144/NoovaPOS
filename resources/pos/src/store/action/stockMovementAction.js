@@ -12,7 +12,7 @@ export const fetchStockMovements =
         }
 
         let url = apiBaseURL.STOCK_MOVEMENTS;
-        if (!_.isEmpty(filter)) {
+        if ((filter && Object.keys(filter).length > 0)) {
             url += requestParam(filter, false, true, null, url);
         }
 
@@ -36,7 +36,7 @@ export const fetchStockMovementSummary =
     (filter = {}) =>
     async (dispatch) => {
         let url = apiBaseURL.STOCK_MOVEMENTS_SUMMARY;
-        if (!_.isEmpty(filter)) {
+        if ((filter && Object.keys(filter).length > 0)) {
             url += requestParam(filter, false, true, null, url);
         }
 

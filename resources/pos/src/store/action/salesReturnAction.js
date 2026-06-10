@@ -21,7 +21,7 @@ export const fetchSalesReturn =
         const admin = true;
         let url = apiBaseURL.SALE_RETURN;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

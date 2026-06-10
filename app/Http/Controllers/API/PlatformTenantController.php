@@ -34,30 +34,50 @@ class PlatformTenantController extends AppBaseController
         $perPage = getPageSize($request);
         $search = trim((string) $request->get('search', ''));
 
-        $query = MultiTenant::query()
-            ->leftJoin('stores', 'stores.tenant_id', '=', 'tenants.id')
-            ->leftJoin('domains', 'domains.tenant_id', '=', 'tenants.id')
-            ->select([
-                'tenants.id',
-                'tenants.store_id',
-                'tenants.created_at',
-                'stores.name as store_name',
-                'stores.status as store_status',
-                'domains.domain as tenant_domain',
-            ]);
+        // One row per tenant. Stores are nested under each tenant rather than
+        // joined 1:1 (which previously produced a duplicate tenant row per store).
+        $query = MultiTenant::query()->select([
+            'tenants.id',
+            'tenants.store_id',
+            'tenants.uses_separate_db',
+            'tenants.created_at',
+        ]);
 
         if ($search !== '') {
-            $query->where(function ($q) use ($search) {
+            $matchedTenantIds = Store::withoutGlobalScope('tenant')
+                ->where('name', 'like', "%{$search}%")
+                ->pluck('tenant_id');
+
+            $matchedByDomain = Domain::query()
+                ->where('domain', 'like', "%{$search}%")
+                ->pluck('tenant_id');
+
+            $query->where(function ($q) use ($search, $matchedTenantIds, $matchedByDomain) {
                 $q->where('tenants.id', 'like', "%{$search}%")
-                    ->orWhere('stores.name', 'like', "%{$search}%")
-                    ->orWhere('domains.domain', 'like', "%{$search}%");
+                    ->orWhereIn('tenants.id', $matchedTenantIds)
+                    ->orWhereIn('tenants.id', $matchedByDomain);
             });
         }
 
         $result = $query->orderByDesc('tenants.created_at')->paginate($perPage);
+        $tenantIds = $result->pluck('id');
+
+        // All stores grouped by tenant (for the expandable store list).
+        $storesByTenant = Store::withoutGlobalScope('tenant')
+            ->whereIn('tenant_id', $tenantIds)
+            ->select(['id', 'tenant_id', 'name', 'status', 'is_default', 'created_at'])
+            ->orderBy('id')
+            ->get()
+            ->groupBy('tenant_id');
+
+        // Primary domain per tenant.
+        $domainsByTenant = Domain::query()
+            ->whereIn('tenant_id', $tenantIds)
+            ->get()
+            ->groupBy('tenant_id');
 
         $ownerEmails = User::withoutGlobalScope('tenant')
-            ->whereIn('tenant_id', $result->pluck('id'))
+            ->whereIn('tenant_id', $tenantIds)
             ->whereHas('roles', fn($q) => $q->where('name', Role::TENANT_OWNER))
             ->select(['tenant_id', 'email'])
             ->get()
@@ -65,24 +85,37 @@ class PlatformTenantController extends AppBaseController
 
         $subscriptions = Subscription::query()
             ->with('plan:id,name')
-            ->whereIn('tenant_id', $result->pluck('id'))
+            ->whereIn('tenant_id', $tenantIds)
             ->orderByDesc('id')
             ->get()
             ->unique('tenant_id')
             ->keyBy('tenant_id');
 
-        $data = $result->through(function ($row) use ($ownerEmails, $subscriptions) {
+        $data = $result->through(function ($row) use ($ownerEmails, $subscriptions, $storesByTenant, $domainsByTenant) {
             $subscription = $subscriptions->get($row->id);
+            $stores = $storesByTenant->get($row->id, collect());
+            $primaryStore = $stores->firstWhere('is_default', true) ?? $stores->first();
+            $primaryDomain = optional($domainsByTenant->get($row->id, collect())->first())->domain;
 
             return [
                 'id' => $row->id,
                 'store_id' => $row->store_id,
-                'store_name' => $row->store_name,
-                'domain' => $row->tenant_domain,
-                'status' => (bool) $row->store_status,
+                // Business name = the tenant's default/primary store name.
+                'store_name' => optional($primaryStore)->name,
+                'domain' => $primaryDomain,
+                // Tenant is considered active if its primary store is active.
+                'status' => (bool) optional($primaryStore)->status,
+                'stores_count' => $stores->count(),
+                'stores' => $stores->map(fn($s) => [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                    'status' => (bool) $s->status,
+                    'is_default' => (bool) $s->is_default,
+                ])->values(),
                 'subscription_status' => optional($subscription)->status,
                 'plan_name' => optional(optional($subscription)->plan)->name,
                 'owner_email' => optional($ownerEmails->get($row->id))->email,
+                'uses_separate_db' => (bool) $row->uses_separate_db,
                 'created_at' => $row->created_at,
             ];
         });
@@ -169,6 +202,50 @@ class PlatformTenantController extends AppBaseController
             'subscription' => $subscription,
             'stats' => $stats,
         ], 'Tenant retrieved successfully.');
+    }
+
+    public function grantAddons(Request $request, string $tenantId): JsonResponse
+    {
+        $data = $request->validate([
+            'shops'    => 'nullable|integer|min:0|max:10000',
+            'users'    => 'nullable|integer|min:0|max:10000',
+            'products' => 'nullable|integer|min:0|max:1000000',
+        ]);
+
+        MultiTenant::query()->findOrFail($tenantId);
+
+        app(\App\Services\TenantSubscriptionService::class)->applyAddons(
+            $tenantId,
+            (int) ($data['shops'] ?? 0),
+            (int) ($data['users'] ?? 0),
+            (int) ($data['products'] ?? 0)
+        );
+
+        return $this->sendSuccess('Add-on allowance granted to tenant.');
+    }
+
+    public function toggleSeparateDb(Request $request, string $tenantId): JsonResponse
+    {
+        $request->validate(['uses_separate_db' => 'required|boolean']);
+
+        $tenant = MultiTenant::query()->findOrFail($tenantId);
+        $tenant->uses_separate_db = $request->boolean('uses_separate_db');
+        $tenant->save();
+
+        AuditLog::create([
+            'tenant_id' => $tenant->id,
+            'actor_id' => auth()->id(),
+            'event' => AuditLog::UPDATED_TENANT_STATUS,
+            'auditable_type' => MultiTenant::class,
+            'auditable_id' => null,
+            'ip_address' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 1000),
+            'old_values' => ['uses_separate_db' => ! $tenant->uses_separate_db],
+            'new_values' => ['uses_separate_db' => $tenant->uses_separate_db],
+            'created_at' => now(),
+        ]);
+
+        return $this->sendSuccess('Tenant database mode updated. Provision the database with: php artisan tenancy:create-databases');
     }
 
     public function changeStatus(Request $request, string $tenantId): JsonResponse

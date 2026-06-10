@@ -16,7 +16,7 @@ export const fetchSetting =
             dispatch(setLoading(true));
         }
         let url = apiBaseURL.SETTINGS;
-        if (!_.isEmpty(filter) && (filter.page || filter.pageSize)) {
+        if ((filter && Object.keys(filter).length > 0) && (filter.page || filter.pageSize)) {
             url += requestParam(filter, null, null, null, url);
         }
         apiConfig

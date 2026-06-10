@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Form from "react-bootstrap/Form";
 import { connect } from "react-redux";
 import * as EmailValidator from "email-validator";
 import { useNavigate } from "react-router-dom";
+import apiConfig from "../../config/apiConfig";
+import { apiBaseURL } from "../../constants";
 import {
     getFormattedMessage,
     placeholderText,
@@ -29,7 +31,16 @@ const CustomerForm = (props) => {
         country: singleCustomer ? singleCustomer[0].country : "",
         city: singleCustomer ? singleCustomer[0].city : "",
         address: singleCustomer ? singleCustomer[0].address : "",
+        price_tier: singleCustomer ? (singleCustomer[0].price_tier || "retail") : "retail",
     });
+    const [tiers, setTiers] = useState([]);
+
+    useEffect(() => {
+        apiConfig
+            .get(apiBaseURL.PRICE_TIERS)
+            .then((res) => setTiers(res.data?.data || []))
+            .catch(() => {});
+    }, []);
 
     const [errors, setErrors] = useState({
         dob: "",
@@ -149,6 +160,23 @@ const CustomerForm = (props) => {
                             />
                             <span className="text-danger d-block fw-400 fs-small mt-2">
                                 {errors["name"] ? errors["name"] : null}
+                            </span>
+                        </div>
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label">Price Tier:</label>
+                            <select
+                                name="price_tier"
+                                className="form-control"
+                                value={customerValue.price_tier || "retail"}
+                                onChange={(e) => onChangeInput(e)}
+                            >
+                                {tiers.length === 0 && <option value="retail">Retail</option>}
+                                {tiers.map((t) => (
+                                    <option key={t.id} value={t.key}>{t.label}</option>
+                                ))}
+                            </select>
+                            <span className="text-muted fs-small">
+                                Default price tier used for this customer in POS.
                             </span>
                         </div>
                         <div className="col-md-6 mb-3">

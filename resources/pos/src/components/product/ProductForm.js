@@ -3,6 +3,8 @@ import { connect, useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Form from "react-bootstrap/Form";
 import { InputGroup, Button } from "react-bootstrap-v5";
+import apiConfig from "../../config/apiConfig";
+import { apiBaseURL } from "../../constants";
 import MultipleImage from "./MultipleImage";
 import { fetchUnits } from "../../store/action/unitsAction";
 import { addProductCategory, fetchAllProductCategories } from "../../store/action/productCategoryAction";
@@ -109,6 +111,34 @@ const ProductForm = (props) => {
         add_stock: "",
         product_variation_code: "",
     });
+
+    // Multi-tier prices ({ tier_key: price }) for non-default tiers.
+    const [priceTiers, setPriceTiers] = useState([]);
+    const [tierPrices, setTierPrices] = useState(
+        singleProduct && singleProduct[0]?.tier_prices
+            ? { ...singleProduct[0].tier_prices }
+            : {}
+    );
+
+    // Unit hierarchy: [{ name, factor_to_base }] (base unit first, factor 1).
+    const [unitLevels, setUnitLevels] = useState(
+        singleProduct && singleProduct[0]?.unit_levels?.length
+            ? singleProduct[0].unit_levels.map((u) => ({ name: u.name, factor_to_base: u.factor_to_base }))
+            : []
+    );
+    const addUnitLevel = () =>
+        setUnitLevels((u) => [...u, { name: "", factor_to_base: "" }]);
+    const updateUnitLevel = (i, field, val) =>
+        setUnitLevels((u) => u.map((row, idx) => (idx === i ? { ...row, [field]: val } : row)));
+    const removeUnitLevel = (i) =>
+        setUnitLevels((u) => u.filter((_, idx) => idx !== i));
+
+    useEffect(() => {
+        apiConfig
+            .get(apiBaseURL.PRICE_TIERS)
+            .then((res) => setPriceTiers((res.data?.data || []).filter((t) => !t.is_default)))
+            .catch(() => {});
+    }, []);
 
     const [unitModel, setUnitModel] = useState(false);
     const [brandModel, setBrandModel] = useState(false);
@@ -842,6 +872,8 @@ const ProductForm = (props) => {
         formData.append("allow_out_of_stock_sale", productValue.allow_out_of_stock_sale ? 1 : 0);
 
         formData.append("notes", productValue.notes);
+        formData.append("tier_prices", JSON.stringify(tierPrices || {}));
+        formData.append("unit_levels", JSON.stringify((unitLevels || []).filter((u) => u.name && Number(u.factor_to_base) > 0)));
         if (productValue.isEdit === false) {
             settings?.attributes?.add_stock_while_product_creation === "1" && formData.append(
                 "purchase_supplier_id",
@@ -1501,6 +1533,82 @@ const ProductForm = (props) => {
                                         {errors["product_price"]
                                             ? errors["product_price"]
                                             : null}
+                                    </span>
+                                </div>
+                                {priceTiers.length > 0 && (
+                                    <div className="col-md-12 mb-3">
+                                        <label className="form-label">
+                                            Tier prices (optional)
+                                        </label>
+                                        <div className="row">
+                                            {priceTiers.map((t) => (
+                                                <div className="col-md-3 mb-2" key={t.id}>
+                                                    <span className="text-muted fs-small">{t.label}</span>
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        className="form-control"
+                                                        value={tierPrices[t.key] ?? ""}
+                                                        placeholder="—"
+                                                        onChange={(e) =>
+                                                            setTierPrices((p) => ({
+                                                                ...p,
+                                                                [t.key]: e.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="col-md-12 mb-3">
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <label className="form-label mb-0">
+                                            Unit hierarchy (box / bar / pack / piece)
+                                        </label>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-outline-primary"
+                                            onClick={addUnitLevel}
+                                        >
+                                            + Add level
+                                        </button>
+                                    </div>
+                                    {(unitLevels || []).map((u, i) => (
+                                        <div className="row mt-2" key={i}>
+                                            <div className="col-md-5">
+                                                <input
+                                                    className="form-control"
+                                                    placeholder="Unit name (e.g. box)"
+                                                    value={u.name}
+                                                    onChange={(e) => updateUnitLevel(i, "name", e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="col-md-5">
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    className="form-control"
+                                                    placeholder="Base units (pieces) per 1"
+                                                    value={u.factor_to_base}
+                                                    onChange={(e) => updateUnitLevel(i, "factor_to_base", e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="col-md-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-danger w-100"
+                                                    onClick={() => removeUnitLevel(i)}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <span className="text-muted fs-small d-block mt-1">
+                                        Define how many base units each level holds (e.g. box = 100,
+                                        pack = 10, piece = 1). Used for mixed-unit sales.
                                     </span>
                                 </div>
                                 <div className="col-md-3 mb-3">

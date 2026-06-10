@@ -91,6 +91,9 @@ class User extends Authenticatable implements HasMedia, JsonResourceful, CanRese
         'password',
         'language',
         'tenant_id',
+        'active_store_id',
+        'country',
+        'kitchen_id',
     ];
 
     public static function rules(): array
@@ -158,11 +161,14 @@ class User extends Authenticatable implements HasMedia, JsonResourceful, CanRese
             'last_name' => $this->last_name,
             'email' => $this->email,
             'phone' => $this->phone,
+            'country' => $this->country,
             'image' => $this->image_url,
             'role' => $this->roles,
             'created_at' => $this->created_at,
             'language' => $this->language,
             'stores' => $storeIds,
+            'shops' => $this->shops ? $this->shops->pluck('shop_id')->toArray() : [],
+            'kitchen_id' => $this->kitchen_id,
         ];
 
         return $fields;

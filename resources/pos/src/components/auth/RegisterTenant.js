@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash, faStore, faUserTie, faGlobe, faCheckCircle, faLink } from "@fortawesome/free-solid-svg-icons";
 import apiConfig from "../../config/apiConfig";
 import { addToast } from "../../store/action/toastAction";
-import { toastType, Tokens } from "../../constants";
+import { toastType, Tokens, apiBaseURL } from "../../constants";
 import TabTitle from "../../shared/tab-title/TabTitle";
 
 // Derive base domain from current hostname so it works on localhost, .local, .com, etc.
@@ -35,8 +35,17 @@ const RegisterTenant = () => {
         owner_phone: "",
         owner_password: "",
         subdomain: "",
+        country: "",
     });
     const [errors, setErrors] = useState({});
+    const [countries, setCountries] = useState([]);
+
+    useEffect(() => {
+        apiConfig
+            .get(apiBaseURL.PUBLIC_COUNTRIES)
+            .then((res) => setCountries(res.data?.data || []))
+            .catch(() => {});
+    }, []);
     const [registered, setRegistered] = useState(false);
     const [tenantUrl, setTenantUrl] = useState("");
 
@@ -208,6 +217,24 @@ const RegisterTenant = () => {
                                         placeholder="Acme Retailers"
                                     />
                                     <span className="text-danger fs-small">{errors.business_name}</span>
+                                </div>
+
+                                {/* Country */}
+                                <div className="col-md-6 mb-4">
+                                    <label className="form-label">Country</label>
+                                    <select
+                                        name="country"
+                                        className="form-control form-control-lg"
+                                        value={form.country}
+                                        onChange={onChange}
+                                    >
+                                        <option value="">-- Select country --</option>
+                                        {countries.map((c) => (
+                                            <option key={c.id} value={c.short_code}>
+                                                {c.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 {/* Subdomain with live preview */}

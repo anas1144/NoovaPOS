@@ -11,6 +11,17 @@ import { useResponsiveLimit } from "../../utils/useResponsiveLimit";
 const AsideTopSubMenuItem = (props) => {
     const { asideConfig, isMenuCollapse } = props;
     const config = useSelector((state) => state.config);
+    const loginUser = useSelector((state) => state.loginUser);
+    const isSuperAdmin = loginUser?.roles === "platform_super_admin";
+    // The header quick-create (+) shortcut is for tenant operators only.
+    const canQuickCreate =
+        !isSuperAdmin &&
+        (config?.includes(Permissions.MANAGE_SALE) ||
+            config?.includes(Permissions.MANAGE_PURCHASE) ||
+            config?.includes(Permissions.MANAGE_CUSTOMERS) ||
+            config?.includes(Permissions.MANAGE_PRODUCTS) ||
+            config?.includes(Permissions.MANAGE_SUPPLIERS) ||
+            config?.includes(Permissions.MANAGE_EXPENSES));
     const location = useLocation();
     const id = useParams();
     const { limit, lessThanLimit } = useResponsiveLimit();       
@@ -115,7 +126,7 @@ const AsideTopSubMenuItem = (props) => {
                     } navbar-light  ${(isMobileDropdownVisible) ? 'd-none d-lg-flex' : 'd-flex'} align-items-center gap-3  px-0 py-0  mx-3`}
             >
                 <div className="navbar-collapse">
-                    {(config?.includes(Permissions.MANAGE_SALE) || config?.includes(Permissions.MANAGE_PURCHASE) || config?.includes(Permissions.MANAGE_CUSTOMERS) || config?.includes(Permissions.MANAGE_PRODUCTS) || config?.includes(Permissions.MANAGE_SUPPLIERS) || config?.includes(Permissions.MANAGE_EXPENSES)) ? <Dropdown className="d-flex align-items-stretch me-3 report_dropdown">
+                    {canQuickCreate ? <Dropdown className="d-flex align-items-stretch me-3 report_dropdown">
                         <Dropdown.Toggle
                             className="hide-arrow bg-transparent border-0 p-0 d-flex align-items-center"
                             id="dropdown-basic"

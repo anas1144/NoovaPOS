@@ -6,5 +6,6 @@ const wampServer = environment.URL + '/api/';
 const axiosApi = axios.create({
     baseURL: wampServer,
 });
-axiosInterceptor.setupInterceptors(axiosApi, false, true);
+// addToken=true → attaches Bearer; isFormData=true → sets multipart Content-Type
+axiosInterceptor.setupInterceptors(axiosApi, true, true);
 export default axiosApi;

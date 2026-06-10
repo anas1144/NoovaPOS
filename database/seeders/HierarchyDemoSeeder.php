@@ -50,6 +50,7 @@ class HierarchyDemoSeeder extends Seeder
         // ── 3. Stores ─────────────────────────────────────────────────
         $mainBranch = Store::create([
             'name'       => 'Main Branch',
+            'shop_type'  => 'retail',
             'tenant_id'  => $tenant->id,
             'status'     => true,
             'is_default' => true,
@@ -58,6 +59,7 @@ class HierarchyDemoSeeder extends Seeder
 
         $cityBranch = Store::create([
             'name'       => 'City Branch',
+            'shop_type'  => 'water_supply',
             'tenant_id'  => $tenant->id,
             'status'     => true,
             'is_default' => false,
@@ -68,6 +70,8 @@ class HierarchyDemoSeeder extends Seeder
 
         // ── 5. Tenant Owner ───────────────────────────────────────────
         $tenantOwner = $this->makeUser('Tenant', 'Owner', 'tenant_owner@abcgroup.com', $tenant->id, Role::TENANT_OWNER);
+        // Pakistan tenant so FBR + PK pricing/bank accounts are exercised.
+        $tenantOwner->update(['country' => 'PK']);
         UserStore::firstOrCreate(['user_id' => $tenantOwner->id, 'store_id' => $mainBranch->id]);
         UserStore::firstOrCreate(['user_id' => $tenantOwner->id, 'store_id' => $cityBranch->id]);
 
@@ -87,6 +91,8 @@ class HierarchyDemoSeeder extends Seeder
         $this->seedShop($mainBranch, $tenant->id, 'Restaurant Hall',     'restaurant', [
             [Role::SHOP_MANAGER, 'Restaurant Manager', 'restaurant.manager@abcgroup.com'],
             [Role::WAITER,        'Waiter Ali',          'waiter@abcgroup.com'],
+            [Role::KITCHEN,       'Kitchen Chef',        'kitchen@abcgroup.com'],
+            [Role::DELIVERY_BOY,  'Delivery Boy',        'delivery.boy@abcgroup.com'],
         ]);
         $this->seedShop($mainBranch, $tenant->id, 'Pharmacy Counter',    'pharmacy', [
             [Role::CASHIER,           'Pharmacy Cashier',   'pharmacy.cashier@abcgroup.com'],

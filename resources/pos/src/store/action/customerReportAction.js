@@ -13,7 +13,7 @@ export const fetchCustomersReport =
         }
         let url = apiBaseURL.CUSTOMERS_REPORT;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||
@@ -58,7 +58,7 @@ export const fetchCustomerSalePayment =
         const admin = true;
         let url = apiBaseURL.CUSTOMER_PAYMENT_REPORT + "/" + id;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

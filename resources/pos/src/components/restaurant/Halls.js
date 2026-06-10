@@ -12,16 +12,27 @@ import {
     saveHall,
     deleteHall,
 } from "../../store/action/restaurantAction";
+import apiConfig from "../../config/apiConfig";
+import { apiBaseURL } from "../../constants";
 
 const HallForm = ({ show, data, onHide }) => {
     const dispatch = useDispatch();
+    const [kitchens, setKitchens] = useState([]);
     const [form, setForm] = useState({
         name: "",
         code: "",
         floor: 1,
         capacity: 0,
+        kitchen_id: "",
         status: 1,
     });
+
+    useEffect(() => {
+        apiConfig
+            .get(apiBaseURL.RESTAURANT_KITCHENS)
+            .then((res) => setKitchens(res.data?.data || []))
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         setForm({
@@ -29,6 +40,7 @@ const HallForm = ({ show, data, onHide }) => {
             code: data?.code || "",
             floor: data?.floor || 1,
             capacity: data?.capacity || 0,
+            kitchen_id: data?.kitchen_id || "",
             status: data?.status !== false ? 1 : 0,
         });
     }, [data, show]);
@@ -80,6 +92,21 @@ const HallForm = ({ show, data, onHide }) => {
                             value={form.capacity}
                             onChange={setF("capacity")}
                         />
+                    </div>
+                    <div className="col-md-12 mb-3">
+                        <label className="form-label">Kitchen (default for this hall)</label>
+                        <select
+                            className="form-control"
+                            value={form.kitchen_id || ""}
+                            onChange={setF("kitchen_id")}
+                        >
+                            <option value="">— None —</option>
+                            {kitchens.map((k) => (
+                                <option key={k.id} value={k.id}>
+                                    {k.name} ({k?.store?.name})
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             </Modal.Body>

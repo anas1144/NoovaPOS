@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
         $this->call(AddPurchaseAndSalePermissionsSeeder::class);
         $this->call(AddPurchaseReturnAndSaleReturnPermissionsSeeder::class);
         $this->call(GenerateCrudPermissionsSeeder::class);
+        $this->call(AttendancePermissionSeeder::class);
 
         // ── 3. Platform super-admin user + sync ALL permissions to superadmin role
         $this->call(DefaultUserSeeder::class);
@@ -38,6 +39,18 @@ class DatabaseSeeder extends Seeder
 
         // ── 5. SaaS subscription plans
         $this->call(DefaultPlansSeeder::class);
+
+        // ── 5b. Super-admin role+permission templates per shop type
+        $this->call(RoleTemplateSeeder::class);
+
+        // ── 5c. Shop-type registry (super admin enables/disables)
+        $this->call(ShopTypeSeeder::class);
+
+        // ── 5d. Platform defaults: billing settings + payout bank accounts
+        $this->call(PlatformDefaultsSeeder::class);
+
+        // ── 5e. Starter marketing CMS content (landing + shop-type + FBR pages)
+        $this->call(CmsSeeder::class);
 
         // ── 6. Demo tenant hierarchy (local / dev only)
         if (app()->environment(['local', 'development', 'testing'])) {

@@ -14,7 +14,7 @@ export const fetchSmsTemplates =
         }
         let url = apiBaseURL.SMS_TEMPLATES;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page || filter.pageSize || filter.search || filter.order_By)
         ) {
             url += requestParam(filter, false, false, true, url);

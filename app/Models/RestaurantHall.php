@@ -17,6 +17,7 @@ class RestaurantHall extends BaseModel
         'tenant_id',
         'store_id',
         'shop_id',
+        'kitchen_id',
         'name',
         'code',
         'floor',

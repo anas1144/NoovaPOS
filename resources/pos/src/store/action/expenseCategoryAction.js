@@ -23,7 +23,7 @@ export const fetchExpenseCategories =
         }
         let url = apiBaseURL.EXPENSES_CATEGORIES;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page || filter.pageSize || filter.search || filter.order_By)
         ) {
             url += requestParam(filter, null, null, null, url);

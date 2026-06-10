@@ -6,5 +6,6 @@ const wampServer = environment.URL + '/api/';
 const axiosApi = axios.create({
     baseURL: wampServer,
 });
-axiosInterceptor.setupInterceptors(axiosApi, true, false);
+// addToken=false → public/login endpoints, no auth header sent
+axiosInterceptor.setupInterceptors(axiosApi, false, false);
 export default axiosApi;

@@ -22,7 +22,7 @@ export const fetchAdjustments =
         const admin = true;
         let url = apiBaseURL.ADJUSTMENTS;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page || filter.pageSize || filter.search)
         ) {
             url += requestParam(filter, admin, null, null, url);

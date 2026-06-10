@@ -8,7 +8,7 @@ export const topSellingProduct = (filter) => async (dispatch) => {
     dispatch(setLoading(true));
 
     let url = apiBaseURL.TOP_SELLING_PRODUCTS;
-    if (!_.isEmpty(filter)) {
+    if (filter && Object.keys(filter).length > 0) {
         url += requestParam(filter, null, null, null, url);
     }
 

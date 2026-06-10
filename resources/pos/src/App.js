@@ -84,7 +84,7 @@ function App() {
     };
 
     const [mappedRoutes, setMappedRoutes] = useState([]);
-    const [redirectTo, setRedirectTo] = useState("");
+    const [redirectTo, setRedirectTo] = useState("/app/dashboard");
     useEffect(() => {
         setMappedRoutes(config.map(mapPermissionToRoute));
     }, [config]);
@@ -123,29 +123,29 @@ function App() {
         }
     }, [language, languageData, updateLanguage?.lang_json_array]);
 
-    // updated language hendling
+    // updated language handling
+    // Strategy: static en.json is always the BASE (contains all keys including
+    // new sidebar items). API / DB lang_json_array is merged ON TOP so
+    // user-customised translations still win, but missing keys fall back to
+    // the static file instead of triggering MISSING_TRANSLATION errors.
     useEffect(() => {
+        const staticBase = allLocales["en"] || {};
+
+        const mergeWithBase = (overrides) => {
+            // staticBase provides all keys; overrides replace only what the DB has
+            return { ...staticBase, ...(overrides || {}) };
+        };
+
         if (Object.values(userEditedMessage).length !== 0) {
-            setMessages(userEditedMessage);
+            setMessages(mergeWithBase(userEditedMessage));
         } else {
             if (updateLanguage?.iso_code === updatedLanguage) {
-                const updateLanguages = updateLanguage?.lang_json_array;
-                setMessages(updateLanguages);
+                setMessages(mergeWithBase(updateLanguage?.lang_json_array));
             } else {
-                if (
-                    updateLanguag === undefined ||
-                    updateLanguag === null ||
-                    updateLanguag === ""
-                ) {
-                    const defaultUpdateLanguage = allLocales["en"];
-                    setMessages(defaultUpdateLanguage);
+                if (!updateLanguag) {
+                    setMessages(staticBase);
                 } else {
-                    if (updateLanguag === undefined || updateLanguag === null) {
-                        const defaultUpdateLanguage = allLocales["en"];
-                        setMessages(defaultUpdateLanguage);
-                    } else {
-                        setMessages(updateLanguag);
-                    }
+                    setMessages(mergeWithBase(updateLanguag));
                 }
             }
         }
@@ -198,6 +198,12 @@ function App() {
             <IntlProvider
                 locale={settingsKey.DEFAULT_LOCALE}
                 messages={messages}
+                onError={(err) => {
+                    // Silently use the message id as fallback for missing keys.
+                    // This prevents the console flood and React error overlay.
+                    if (err.code === 'MISSING_TRANSLATION') return;
+                    console.error(err);
+                }}
             >
                 <Routes>
                     <Route path="/login" element={<Login />} />
@@ -219,7 +225,7 @@ function App() {
                         element={
                             <Navigate
                                 replace
-                                to={token ? redirectTo : "/login"}
+                                to={token ? (redirectTo || "/app/dashboard") : "/login"}
                             />
                         }
                     />

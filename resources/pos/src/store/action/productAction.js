@@ -38,7 +38,7 @@ export const fetchProducts =
         }
         let url = apiBaseURL.PRODUCTS;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||
@@ -239,7 +239,7 @@ export const fetchAllMainProducts =
         }
         let url = apiBaseURL.MAIN_PRODUCTS;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\CentralConnection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Plan extends BaseModel
 {
-    use HasFactory;
+    use HasFactory, CentralConnection;
 
     protected $table = 'plans';
 
@@ -82,6 +83,9 @@ class Plan extends BaseModel
         'max_registers',
         'max_users',
         'max_products',
+        'offers_separate_db',
+        'separate_db_price',
+        'separate_db_max_users',
         'per_shop_price',
         'per_shop_price_pkr',
         'shop_type_pricing',
@@ -111,6 +115,8 @@ class Plan extends BaseModel
         'volume_pricing_pkr'    => 'array',
         'allowed_countries'     => 'array',
         'status'                => 'boolean',
+        'offers_separate_db'    => 'boolean',
+        'separate_db_price'     => 'decimal:2',
         'is_custom'             => 'boolean',
         'is_contact_sales'      => 'boolean',
         'is_featured'           => 'boolean',

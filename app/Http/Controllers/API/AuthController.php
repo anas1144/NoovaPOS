@@ -6,6 +6,7 @@ use App\Http\Controllers\AppBaseController;
 use App\Http\Requests\RegisterRequest;
 use App\Models\Language;
 use App\Models\User;
+use Stancl\Tenancy\Database\Models\Domain;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -86,18 +87,61 @@ class AuthController extends AppBaseController
         $userPermissions = $user->getAllPermissions()->pluck('name')->toArray();
         // Capture role name BEFORE unsetting relations (prevents "roles[0]" crash)
         $userRole = $user->getRoleNames()->first() ?? '';
+
+        // Plan-limit enforcement: block over-limit users/shops from logging in.
+        // Privileged roles are NEVER blocked so they can always reach Billing
+        // to fix the situation.
+        $privileged = in_array($userRole, [
+            'platform_super_admin', 'admin', 'tenant_owner', 'branch_manager',
+        ], true);
+        if (! $privileged && $user->tenant_id) {
+            $svc = app(\App\Services\TenantSubscriptionService::class);
+
+            if (in_array($user->id, $svc->overLimitIds($user->tenant_id, 'users'), true)) {
+                return $this->sendError(
+                    'Your account is disabled because the workspace exceeds its plan user limit. Please contact your administrator.',
+                    403
+                );
+            }
+
+            $overShops = $svc->overLimitIds($user->tenant_id, 'shops');
+            if (! empty($overShops)) {
+                $userShopIds = \App\Models\UserShop::where('user_id', $user->id)->pluck('shop_id')->all();
+                // Blocked only if EVERY shop they belong to is over-limit.
+                if (! empty($userShopIds) && empty(array_diff($userShopIds, $overShops))) {
+                    return $this->sendError(
+                        'Your shop is disabled because the workspace exceeds its plan shop limit. Please contact your administrator.',
+                        403
+                    );
+                }
+            }
+        }
+
         unset($user->roles);
         unset($user->permissions);
         $token = $user->createToken('token')->plainTextToken;
         $user->last_name = $user->last_name ?? '';
 
+        // If this is a tenant user logging in from the central domain,
+        // return their tenant domain so the frontend can redirect them
+        // to the correct subdomain (e.g. abcgroup.noovapos.local).
+        // The platform super admin operates on the central domain and must never
+        // be redirected onto a tenant subdomain, even if a tenant_id is set on
+        // their record. Only genuine tenant users get a tenant_domain.
+        $tenantDomain = null;
+        if ($user->tenant_id && $userRole !== 'platform_super_admin') {
+            $domain = Domain::where('tenant_id', $user->tenant_id)->first();
+            $tenantDomain = $domain?->domain;
+        }
+
         return response()->json([
             'data' => [
-                'token' => $token,
-                'user' => $user,
-                'expires_at' => config('sanctum.expiration'),
-                'permissions' => $userPermissions,
-                'roles' => $userRole,
+                'token'         => $token,
+                'user'          => $user,
+                'expires_at'    => config('sanctum.expiration'),
+                'permissions'   => $userPermissions,
+                'roles'         => $userRole,
+                'tenant_domain' => $tenantDomain, // null for superadmin, domain string for tenant users
             ],
             'message' => 'Logged in successfully.',
         ]);

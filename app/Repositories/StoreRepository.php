@@ -55,17 +55,21 @@ class StoreRepository extends BaseRepository
         try {
             DB::beginTransaction();
 
+            // A tenant owner creating a store adds a BRANCH under their own tenant
+            // (not a brand-new tenant). Link it to the creating user so it appears
+            // in their store list.
             $store = Store::create([
                 'name' => $input['name'],
-                'user_id' => Auth::id(),
+                'shop_type' => $input['shop_type'] ?? 'retail',
+                'tenant_id' => Auth::user()->tenant_id,
+                'status' => true,
+                'is_default' => false,
             ]);
 
-            $tenant = MultiTenant::create(['store_id' => $store->id]);
-
-            $store->update(['tenant_id' => $tenant->id]);
-            $this->createDomain($tenant->id, $input['domain'] ?? $input['subdomain'] ?? null);
-
-            $this->storeDefaultSettings($tenant->id);
+            UserStore::firstOrCreate([
+                'user_id' => Auth::id(),
+                'store_id' => $store->id,
+            ]);
 
             DB::commit();
             return $store;
@@ -81,9 +85,10 @@ class StoreRepository extends BaseRepository
             DB::beginTransaction();
 
             $store = Store::find($storeId);
-            $store->update([
-                'name' => $input['name'],
-            ]);
+            $store->update(array_filter([
+                'name' => $input['name'] ?? $store->name,
+                'shop_type' => $input['shop_type'] ?? null,
+            ], fn ($v) => $v !== null));
 
             DB::commit();
             return $store;

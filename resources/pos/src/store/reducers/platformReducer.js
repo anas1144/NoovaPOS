@@ -7,6 +7,10 @@ const initialState = {
     subscriptions: [],
     auditLogs: [],
     backups: [],
+    roleTemplates: [],
+    permissionCatalog: { modules: [], shop_types: [] },
+    payments: [],
+    bankAccounts: [],
 };
 
 export default (state = initialState, action) => {
@@ -23,6 +27,20 @@ export default (state = initialState, action) => {
             return { ...state, auditLogs: action.payload || [] };
         case platformActionType.FETCH_PLATFORM_BACKUPS:
             return { ...state, backups: action.payload || [] };
+        case platformActionType.FETCH_ROLE_TEMPLATES:
+            return { ...state, roleTemplates: action.payload || [] };
+        case platformActionType.FETCH_PERMISSION_CATALOG:
+            return {
+                ...state,
+                permissionCatalog: action.payload || {
+                    modules: [],
+                    shop_types: [],
+                },
+            };
+        case platformActionType.FETCH_PLATFORM_PAYMENTS:
+            return { ...state, payments: action.payload || [] };
+        case platformActionType.FETCH_BANK_ACCOUNTS:
+            return { ...state, bankAccounts: action.payload || [] };
         default:
             return state;
     }

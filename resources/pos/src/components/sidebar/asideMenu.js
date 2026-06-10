@@ -75,6 +75,9 @@ const AsideMenu = (props) => {
             return asideConfig;
         }
         return asideConfig.filter((post) => {
+            if (post.type === "section") {
+                return false;
+            }
             if (post.newRoute || post.subTitles) {
                 if (post.newRoute) {
                     const allrouth = post.newRoute.map((posts) => {
@@ -238,6 +241,10 @@ const AsideMenu = (props) => {
                 } aside-menu-container`}
             >
                 <SidebarHeader className="aside-menu-container__aside-logo flex-column-auto pb-2 pt-3">
+                    {/* Store selector is hidden for the platform super admin —
+                        the super admin operates at the platform level, not inside
+                        a single tenant's store. */}
+                    {loginUser?.roles !== "platform_super_admin" && (
                     <DropdownButton
                         id="store-dropdown"
                         title={
@@ -277,6 +284,7 @@ const AsideMenu = (props) => {
                                 </Dropdown.Item>
                             ))}
                     </DropdownButton>
+                    )}
                     {/* <a
                         href="/"
                         className="text-decoration-none sidebar-logo text-gray-900 fs-4"
@@ -344,7 +352,20 @@ const AsideMenu = (props) => {
                     <Menu>
                         {filteredMenu.length ? (
                             filteredMenu.map((mainItems, index) => {
-                                if (loginUser.roles !== 'admin' && (mainItems.name === "store" || mainItems.name === "payment-methods")) return;
+                                // Section divider entries: { type: "section", label }
+                                if (mainItems.type === "section") {
+                                    return isMenuCollapse ? null : (
+                                        <li
+                                            key={index}
+                                            className="sidebar-section-label text-uppercase text-muted small fw-semibold px-4 pt-3 pb-1"
+                                        >
+                                            {mainItems.label}
+                                        </li>
+                                    );
+                                }
+                                // Skip anything without a destination or submenu (guards against Link to={undefined})
+                                if (!mainItems.newRoute && !mainItems.to) return null;
+                                if (!['admin','platform_super_admin','tenant_owner'].includes(loginUser?.roles) && (mainItems.name === "store" || mainItems.name === "payment-methods")) return;
                                 return mainItems.newRoute ? (
                                     <SubMenu
                                         key={index}

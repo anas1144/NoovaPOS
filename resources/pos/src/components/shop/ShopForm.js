@@ -76,6 +76,20 @@ const ShopForm = ({ show, data, handleClose, title, isEdit }) => {
         setErrors({});
     };
 
+    // Selecting a store locks the shop's type to that store's type.
+    const onChangeStore = (e) => {
+        const storeId = e.target.value;
+        const selected = (stores || []).find(
+            (s) => String(s.id) === String(storeId)
+        );
+        setShopValue((inputs) => ({
+            ...inputs,
+            store_id: storeId,
+            shop_type: selected?.attributes?.shop_type || inputs.shop_type || "retail",
+        }));
+        setErrors({});
+    };
+
     const prepareFormData = (data) => {
         const fd = new FormData();
         fd.append("name", data.name);
@@ -129,7 +143,7 @@ const ShopForm = ({ show, data, handleClose, title, isEdit }) => {
                             name="store_id"
                             className="form-control"
                             value={shopValue.store_id || ""}
-                            onChange={onChangeInput}
+                            onChange={onChangeStore}
                         >
                             <option value="">-- Select store --</option>
                             {stores &&
@@ -175,18 +189,18 @@ const ShopForm = ({ show, data, handleClose, title, isEdit }) => {
                     </div>
                     <div className="col-md-6 mb-3">
                         <label className="form-label">Shop Type:</label>
-                        <select
-                            name="shop_type"
-                            className="form-control"
-                            value={shopValue.shop_type}
-                            onChange={onChangeInput}
-                        >
-                            {SHOP_TYPES.map((t) => (
-                                <option key={t.value} value={t.value}>
-                                    {t.label}
-                                </option>
-                            ))}
-                        </select>
+                        <input
+                            type="text"
+                            className="form-control bg-light text-dark text-capitalize"
+                            value={(
+                                SHOP_TYPES.find((t) => t.value === shopValue.shop_type)?.label
+                            ) || (shopValue.shop_type || "retail").replace(/_/g, " ")}
+                            readOnly
+                            disabled
+                        />
+                        <span className="text-muted fs-small d-block mt-1">
+                            Inherited from the selected store (locked).
+                        </span>
                     </div>
                     <div className="col-md-12 mb-3">
                         <label className="form-check form-switch form-switch-sm">

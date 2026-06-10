@@ -172,14 +172,17 @@ ROLES & PERMISSIONS
 Roles:
 
 - platform_super_admin
+- admin
 - tenant_owner
 - branch_manager
 - shop_manager
 - cashier
 - waiter
+- kitchen              (restaurant back-of-house: KOT queue / kitchen display)
 - accountant
 - inventory_manager
-- delivery_staff
+- delivery_staff       (water / distribution driver)
+- delivery_boy         (restaurant takeaway/delivery rider)
 
 Requirements:
 
@@ -730,4 +733,43 @@ IMPORTANT:
 - Keep APIs stateless and scalable.
 - Make POS ultra-fast and resilient.
 - Make imports/background tasks survive refresh/logout/browser close.
+
+====================================================
+IMPLEMENTATION STATUS (kept current — see README for detail)
+====================================================
+
+Recently built on top of the SaaS/billing/hierarchy core:
+
+- Feature flags: global (Platform → Features) ∧ per-store (Settings → Store
+  Features), resolved via FeatureService; UI gates on GET /api/my-features.
+- POS cart: price-tier selector, Add Deal (combo → real product lines summing to
+  the deal price), Mixed Units (box/pack/piece → base qty + unit_breakdown via
+  GET /products/{id}/unit-levels), feature-gated Send to Kitchen with delta-KOT
+  reprint (sends only newly added quantity).
+- Subscription payments: two methods the super admin enables/disables —
+  "request" (manual proof upload) and "checkout" (online). Checkout channels are
+  country-aware: a global hosted payment LINK, or Pakistan locals (JazzCash,
+  Easypaisa, HBL, Meezan, UBL, …). Managed at Platform → Billing Settings →
+  Payment methods; hosted pay page at /billing/pay/{token}. No paid gateway SDK
+  is required (free-method compliant) — a pending payment is recorded with the
+  chosen channel + reference and confirmed by the super admin.
+
+- Attendance Management (POS-integrated, reuses HR `employees`): kiosk check-in/out
+  with Face (face-api.js, real client-side match), Barcode/QR (html5-qrcode +
+  USB), Fingerprint (camera visual record, future-ready), Manual. Tasks
+  (office/personal start/pause/resume/complete), breaks, dashboard + live board,
+  reports (summary/productivity/performance), requests (employee correction →
+  manager approve), and Configuration → Attendance. NO-CODE **Device Connectors**
+  let any external scanner / face terminal / cloud API be added by config
+  (endpoint + auth + request/response mapping), server- or client(localhost)-run,
+  with no code changes. Permissions `attendance.*`; seeder
+  AttendancePermissionSeeder.
+
+Notes:
+- FBR remains Pakistan-only; the FBR invoice number is assigned asynchronously by
+  the FBR sync queue, so it appears on record/reprint after sync, not on the
+  first instant slip.
+- Frontend builds with Vite (rolldown). On Linux the native binding
+  @rolldown/binding-linux-x64-gnu is required; Windows uses
+  binding-win32-x64-msvc. Run `npm run build` in the OS you deploy from.
 - Generate enterprise-level recommendations only.

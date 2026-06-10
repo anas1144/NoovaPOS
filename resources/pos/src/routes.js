@@ -103,12 +103,28 @@ import SyncQueue from "./components/offlineSync/SyncQueue";
 import PlatformDashboard from "./components/platform/PlatformDashboard";
 import PlatformTenants from "./components/platform/PlatformTenants";
 import PlatformPlans from "./components/platform/PlatformPlans";
+import PlatformRoleTemplates from "./components/platform/PlatformRoleTemplates";
+import Billing from "./components/billing/Billing";
+import PlatformPayments from "./components/platform/PlatformPayments";
+import PlatformBankAccounts from "./components/platform/PlatformBankAccounts";
+import PlatformBillingSettings from "./components/platform/PlatformBillingSettings";
+import PlatformShopTypes from "./components/platform/PlatformShopTypes";
+import PlatformFeatures from "./components/platform/PlatformFeatures";
+import PlatformCmsPages from "./components/platform/PlatformCmsPages";
+import PlatformBlog from "./components/platform/PlatformBlog";
+import StoreFeatures from "./components/store/StoreFeatures";
+import PriceTiers from "./components/price-tier/PriceTiers";
+import Deals from "./components/deals/Deals";
+import Deliveries from "./components/delivery/Deliveries";
+import CustomerDisplays from "./components/kiosk/CustomerDisplays";
+import CustomerOrders from "./components/kiosk/CustomerOrders";
 import PlatformSubscriptions from "./components/platform/PlatformSubscriptions";
 import PlatformAuditLogs from "./components/platform/PlatformAuditLogs";
 import PlatformBackups from "./components/platform/PlatformBackups";
 import Halls from "./components/restaurant/Halls";
 import Tables from "./components/restaurant/Tables";
 import KotBoard from "./components/restaurant/KotBoard";
+import Kitchens from "./components/restaurant/Kitchens";
 import RecurringPlans from "./components/recurring/RecurringPlans";
 import CustomerSubscriptions from "./components/recurring/CustomerSubscriptions";
 import DeliverySchedules from "./components/recurring/DeliverySchedules";
@@ -122,6 +138,16 @@ import Insights from "./components/insights/Insights";
 import FbrInvoices from "./components/fbrProfile/FbrInvoices";
 import Employees from "./components/hr/Employees";
 import Attendance from "./components/hr/Attendance";
+import AttendanceCheckin from "./components/attendance/AttendanceCheckin";
+import AttendanceDashboard from "./components/attendance/AttendanceDashboard";
+import LiveAttendance from "./components/attendance/LiveAttendance";
+import AttendanceTasks from "./components/attendance/AttendanceTasks";
+import FaceEnrollment from "./components/attendance/FaceEnrollment";
+import FingerprintEnrollment from "./components/attendance/FingerprintEnrollment";
+import AttendanceSettings from "./components/attendance/AttendanceSettings";
+import AttendanceReports from "./components/attendance/AttendanceReports";
+import AttendanceRequests from "./components/attendance/AttendanceRequests";
+import DeviceConnectors from "./components/attendance/DeviceConnectors";
 import Pipeline from "./components/crm/Pipeline";
 
 export const route = [
@@ -234,6 +260,11 @@ export const route = [
     {
         path: "profile/edit",
         ele: <UpdateProfile />,
+        permission: "",
+    },
+    {
+        path: "billing",
+        ele: <Billing />,
         permission: "",
     },
     {
@@ -657,8 +688,78 @@ export const route = [
         permission: "",
     },
     {
+        path: "platform/role-templates",
+        ele: <PlatformRoleTemplates />,
+        permission: "",
+    },
+    {
         path: "platform/subscriptions",
         ele: <PlatformSubscriptions />,
+        permission: "",
+    },
+    {
+        path: "platform/payments",
+        ele: <PlatformPayments />,
+        permission: "",
+    },
+    {
+        path: "platform/bank-accounts",
+        ele: <PlatformBankAccounts />,
+        permission: "",
+    },
+    {
+        path: "platform/billing-settings",
+        ele: <PlatformBillingSettings />,
+        permission: "",
+    },
+    {
+        path: "platform/shop-types",
+        ele: <PlatformShopTypes />,
+        permission: "",
+    },
+    {
+        path: "platform/features",
+        ele: <PlatformFeatures />,
+        permission: "",
+    },
+    {
+        path: "platform/cms-pages",
+        ele: <PlatformCmsPages />,
+        permission: "",
+    },
+    {
+        path: "platform/blog",
+        ele: <PlatformBlog />,
+        permission: "",
+    },
+    {
+        path: "store-features",
+        ele: <StoreFeatures />,
+        permission: "",
+    },
+    {
+        path: "price-tiers",
+        ele: <PriceTiers />,
+        permission: "",
+    },
+    {
+        path: "deals",
+        ele: <Deals />,
+        permission: "",
+    },
+    {
+        path: "deliveries",
+        ele: <Deliveries />,
+        permission: "",
+    },
+    {
+        path: "customer-displays",
+        ele: <CustomerDisplays />,
+        permission: "",
+    },
+    {
+        path: "customer-orders",
+        ele: <CustomerOrders />,
         permission: "",
     },
     {
@@ -684,6 +785,11 @@ export const route = [
     {
         path: "restaurant/kots",
         ele: <KotBoard />,
+        permission: "",
+    },
+    {
+        path: "restaurant/kitchens",
+        ele: <Kitchens />,
         permission: "",
     },
     {
@@ -749,6 +855,56 @@ export const route = [
     {
         path: "hr/attendance",
         ele: <Attendance />,
+        permission: "",
+    },
+    {
+        path: "attendance/checkin",
+        ele: <AttendanceCheckin />,
+        permission: "",
+    },
+    {
+        path: "attendance/dashboard",
+        ele: <AttendanceDashboard />,
+        permission: "",
+    },
+    {
+        path: "attendance/live",
+        ele: <LiveAttendance />,
+        permission: "",
+    },
+    {
+        path: "attendance/tasks",
+        ele: <AttendanceTasks />,
+        permission: "",
+    },
+    {
+        path: "attendance/biometrics/face",
+        ele: <FaceEnrollment />,
+        permission: "",
+    },
+    {
+        path: "attendance/biometrics/fingerprint",
+        ele: <FingerprintEnrollment />,
+        permission: "",
+    },
+    {
+        path: "attendance/settings",
+        ele: <AttendanceSettings />,
+        permission: "",
+    },
+    {
+        path: "attendance/reports",
+        ele: <AttendanceReports />,
+        permission: "",
+    },
+    {
+        path: "attendance/requests",
+        ele: <AttendanceRequests />,
+        permission: "",
+    },
+    {
+        path: "attendance/devices",
+        ele: <DeviceConnectors />,
         permission: "",
     },
     {

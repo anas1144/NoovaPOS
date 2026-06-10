@@ -168,6 +168,16 @@ class ProductAPIController extends AppBaseController
             ]);
         }
 
+        // POS / sale load all products (page[size]=0). Hide products that exceed
+        // the tenant's plan+add-on product limit (oldest within limit stay sellable).
+        if ((int) $perPage === 0) {
+            $cutoff = app(\App\Services\TenantSubscriptionService::class)
+                ->productCutoff(\Illuminate\Support\Facades\Auth::user()?->tenant_id);
+            if ($cutoff !== null) {
+                $products->where('id', '<=', $cutoff);
+            }
+        }
+
         return $products->paginate($perPage);
     }
 
@@ -193,6 +203,9 @@ class ProductAPIController extends AppBaseController
 
         $product = $this->productRepository->storeProduct($input);
 
+        $this->syncTierPrices($product->id, $request->input('tier_prices'));
+        $this->syncUnitLevels($product->id, $request->input('unit_levels'));
+
         VariationProduct::create([
             'product_id' => $product->id,
             'variation_id' => $input['variation_id'],
@@ -215,8 +228,86 @@ class ProductAPIController extends AppBaseController
     {
         $input = $request->all();
         $product = $this->productRepository->updateProduct($input, $id);
+        $this->syncTierPrices($id, $request->input('tier_prices'));
+        $this->syncUnitLevels($id, $request->input('unit_levels'));
         $this->clearProductCache();
         return new ProductResource($product);
+    }
+
+    /**
+     * Return a product's unit hierarchy (base-first), so the POS can offer a
+     * box/pack/piece breakdown for a cart line.
+     */
+    public function unitLevels($id): \Illuminate\Http\JsonResponse
+    {
+        $levels = \App\Models\ProductUnitLevel::where('product_id', $id)
+            ->orderBy('factor_to_base')
+            ->get(['name', 'factor_to_base', 'sort_order']);
+
+        return $this->sendResponse($levels, 'Unit levels retrieved.');
+    }
+
+    /**
+     * Persist a product's unit hierarchy. Accepts an array of
+     * { name, factor_to_base } (or a JSON string of it). Always keeps a base
+     * "piece" level at factor 1.
+     */
+    private function syncUnitLevels($productId, $levels): void
+    {
+        if (is_string($levels)) {
+            $levels = json_decode($levels, true);
+        }
+        if (! is_array($levels)) {
+            return;
+        }
+
+        \App\Models\ProductUnitLevel::withoutGlobalScope('tenant')
+            ->where('product_id', $productId)->delete();
+
+        $sort = 0;
+        foreach ($levels as $lvl) {
+            $name = trim((string) ($lvl['name'] ?? ''));
+            $factor = (float) ($lvl['factor_to_base'] ?? 0);
+            if ($name === '' || $factor <= 0) {
+                continue;
+            }
+            \App\Models\ProductUnitLevel::create([
+                'product_id'     => $productId,
+                'name'           => $name,
+                'factor_to_base' => $factor,
+                'sort_order'     => $sort++,
+            ]);
+        }
+    }
+
+    /**
+     * Persist non-default tier prices for a product. Accepts a map/array of
+     * { tier_key: price } (or a JSON string of it).
+     */
+    private function syncTierPrices($productId, $tierPrices): void
+    {
+        if (is_string($tierPrices)) {
+            $tierPrices = json_decode($tierPrices, true);
+        }
+        if (! is_array($tierPrices)) {
+            return;
+        }
+
+        foreach ($tierPrices as $tier => $price) {
+            $tier = (string) $tier;
+            if ($tier === '' || $tier === 'retail') {
+                continue; // retail uses the base product_price
+            }
+            if ($price === null || $price === '') {
+                \App\Models\ProductPrice::withoutGlobalScope('tenant')
+                    ->where('product_id', $productId)->where('price_tier', $tier)->delete();
+                continue;
+            }
+            \App\Models\ProductPrice::updateOrCreate(
+                ['product_id' => $productId, 'price_tier' => $tier],
+                ['price' => (float) $price]
+            );
+        }
     }
 
     public function destroy($id): JsonResponse
@@ -286,7 +377,14 @@ class ProductAPIController extends AppBaseController
 
     public function getAllProducts()
     {
-        $products = Product::all();
+        $query = Product::query();
+        // Hide over-limit products from sale/POS pickers.
+        $cutoff = app(\App\Services\TenantSubscriptionService::class)
+            ->productCutoff(\Illuminate\Support\Facades\Auth::user()?->tenant_id);
+        if ($cutoff !== null) {
+            $query->where('id', '<=', $cutoff);
+        }
+        $products = $query->get();
         $data = [];
 
         foreach ($products as $product) {

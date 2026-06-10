@@ -17,6 +17,7 @@ class Store extends BaseModel implements JsonResourceful
 
     protected $fillable = [
         'name',
+        'shop_type',
         'tenant_id',
         'status',
         'is_default',
@@ -42,11 +43,16 @@ class Store extends BaseModel implements JsonResourceful
     {
         return [
             'name' => $this->name,
+            'shop_type' => $this->shop_type ?: 'retail',
             'tenant_id' => $this->tenant_id,
             'status' => (int)$this->status,
             'is_default' => (bool)$this->is_default,
             'users' => UserStore::where('store_id', $this->id)->count(),
-            'active' => Auth::user()->tenant_id === $this->tenant_id,
+            // Active = the store the user has selected. Fall back to the default
+            // store when the user hasn't picked one yet.
+            'active' => Auth::user()->active_store_id
+                ? (int) Auth::user()->active_store_id === (int) $this->id
+                : (bool) $this->is_default,
         ];
     }
 }

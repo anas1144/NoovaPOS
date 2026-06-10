@@ -28,6 +28,7 @@ class UpdateUserProfileRequest extends FormRequest
             'phone' => 'required|numeric',
             'email' => 'required|email|unique:users,email,'.$id,
             'image' => 'image|mimes:jpg,jpeg,png,svg',
+            'country' => 'nullable|string|max:5',
         ];
     }
 }

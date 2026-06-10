@@ -20,7 +20,7 @@ export const fetchExpenses =
         }
         let url = apiBaseURL.EXPENSES;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

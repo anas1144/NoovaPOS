@@ -17,6 +17,8 @@ import ReactSelect from "../../shared/select/reactSelect";
 import { fetchAllRoles } from "../../store/action/roleAction";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import apiConfig from "../../config/apiConfig";
+import { apiBaseURL } from "../../constants";
 
 const UserForm = (props) => {
     const {
@@ -61,6 +63,43 @@ const UserForm = (props) => {
 
     const [selectStore, setSelectStore] = useState([]);
     const [userRoles, setUserRoles] = useState([]);
+    const [shopList, setShopList] = useState([]);
+    const [selectShop, setSelectShop] = useState(
+        singleUser && singleUser[0]?.shops ? singleUser[0].shops : []
+    );
+
+    useEffect(() => {
+        apiConfig
+            .get(apiBaseURL.SHOPS || "/shops")
+            .then((res) => {
+                const rows = res.data?.data || [];
+                setShopList(
+                    rows.map((s) => ({
+                        id: s.id,
+                        name: s?.attributes?.name,
+                        store_id: s?.attributes?.store_id,
+                    }))
+                );
+            })
+            .catch(() => {});
+    }, []);
+
+    // Only shops belonging to the user's selected stores are assignable.
+    const availableShops = shopList.filter((s) =>
+        selectStore.map(String).includes(String(s.store_id))
+    );
+
+    const handleShopChanged = (event, shop) => {
+        const { checked } = event.target;
+        let next = [...selectShop];
+        if (checked) {
+            next.push(shop.id);
+        } else {
+            next = next.filter((id) => id !== shop.id);
+        }
+        setSelectShop(next);
+        setUserValue((v) => ({ ...v, shops: next }));
+    };
 
     const avatarName = getAvatarName(
         singleUser &&
@@ -218,6 +257,10 @@ const UserForm = (props) => {
         formData.append("phone", data.phone);
         if(userValue?.role_id?.label !== "admin") {
             formData.append("stores", data.stores);
+            // Only shops within the selected stores.
+            const validShopIds = availableShops.map((s) => s.id);
+            const shopsToSend = (selectShop || []).filter((id) => validShopIds.includes(id));
+            formData.append("shops", shopsToSend);
         }
         if (!isEdit) {
             formData.append("password", data.password);
@@ -542,6 +585,38 @@ const UserForm = (props) => {
                                 </div>
                             </div>
                         </div>}
+                        {userValue?.role_id?.label !== "admin" && selectStore.length > 0 && (
+                            <div className="row mt-1">
+                                <div className="col-md-12 mb-3">
+                                    <label className="form-label">
+                                        Shops / Counters:
+                                    </label>
+                                    {availableShops.length === 0 ? (
+                                        <div className="text-muted fs-small">
+                                            No shops in the selected store(s). Create shops first
+                                            (optional — the user can still be store-level).
+                                        </div>
+                                    ) : (
+                                        <div className="d-flex col-md-12 flex-wrap">
+                                            {availableShops.map((shop, index) => (
+                                                <div className="col-md-3" key={index}>
+                                                    <label className="form-check form-check-custom form-check-solid form-check-inline d-flex align-items-center my-3 cursor-pointer custom-label">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectShop.includes(shop.id)}
+                                                            onChange={(event) => handleShopChanged(event, shop)}
+                                                            className="me-3 form-check-input cursor-pointer"
+                                                        />
+                                                        <div className="control__indicator" />
+                                                        {shop.name}
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                         <ModelFooter
                             onEditRecord={singleUser}
                             onSubmit={onSubmit}

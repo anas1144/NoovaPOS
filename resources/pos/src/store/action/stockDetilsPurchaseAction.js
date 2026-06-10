@@ -13,7 +13,7 @@ export const stockDetailsPurchaseAction =
         }
         let url = apiBaseURL.STOCK_PURCHASE_TAB + "?product_id=" + id;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

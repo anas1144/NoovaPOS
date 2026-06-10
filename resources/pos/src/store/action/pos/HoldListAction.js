@@ -12,7 +12,7 @@ export const fetchHoldLists =
         const admin = true;
         let url = apiBaseURL.HOLDS_LIST;
         if (
-            !_.isEmpty(filter) &&
+            (filter && Object.keys(filter).length > 0) &&
             (filter.page ||
                 filter.pageSize ||
                 filter.search ||

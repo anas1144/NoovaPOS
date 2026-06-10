@@ -72,6 +72,8 @@ class SaleItem extends BaseModel implements JsonResourceful
         'sale_unit',
         'quantity',
         'sub_total',
+        'unit_breakdown',
+        'price_tier',
     ];
 
     public static $rules = [
@@ -89,6 +91,7 @@ class SaleItem extends BaseModel implements JsonResourceful
     ];
 
     public $casts = [
+        'unit_breakdown' => 'array',
         'product_price' => 'double',
         'tax_amount' => 'double',
         'tax_value' => 'double',

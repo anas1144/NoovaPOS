@@ -15,6 +15,89 @@ Platform Super Admin
 
 ---
 
+## Quick Start — Full Setup & Run
+
+Complete process to bring everything up from a fresh clone (Windows + Laragon
+shown; macOS/Linux identical commands).
+
+### 0. Requirements
+PHP 8.2+, Composer, Node 18+, MySQL 8, Redis. On Laragon: enable **MySQL** and
+**Redis** from the menu, and turn on **Auto virtual hosts** for `*.local`.
+
+### 1. Start services
+Start **MySQL** and **Redis** in Laragon (Redis is required — queues, Horizon,
+caching and tenant-DB provisioning use it).
+
+### 2. Backend dependencies + environment
+```bash
+composer install
+composer require laravel/horizon          # queue dashboard (first time only)
+php artisan horizon:publish               # publishes Horizon assets
+copy .env.example .env                     # macOS/Linux: cp .env.example .env
+php artisan key:generate
+```
+Then edit `.env`:
+```
+APP_URL=http://noovapos.local
+DB_DATABASE=noovapos        DB_USERNAME=root        DB_PASSWORD=
+REDIS_HOST=127.0.0.1        REDIS_PORT=6379
+QUEUE_CONNECTION=redis      CACHE_DRIVER=redis
+TENANCY_CENTRAL_DOMAINS=noovapos.local
+```
+
+### 3. Database — create schema + seed everything
+```bash
+php artisan migrate:fresh --seed          # all tables incl. attendance + seed data
+php artisan storage:link                  # for uploaded payment proofs
+```
+`--seed` runs roles/permissions (incl. `attendance.*`), plans, shop types, role
+templates, platform/billing defaults, CMS content, and the demo tenant.
+> Use `php artisan migrate` (without `:fresh`) to apply new migrations while
+> keeping existing data.
+
+### 4. Frontend — assets + build
+```bash
+npm install
+npm run fetch:face-models                 # one-time: face-recognition weights (needs internet)
+npm run build                             # production build  (or: npm run dev)
+```
+`fetch:face-models` makes attendance face recognition run fully self-hosted; the
+scanner + face JS libs are already vendored in `public/vendor/`.
+
+### 5. Queue worker (REQUIRED)
+Background work — FBR sync, imports, **tenant-database provisioning**,
+notifications — runs on the queue. Keep one running:
+```bash
+php artisan horizon                        # dashboard at /horizon (super admin only)
+```
+> On a fresh `migrate:fresh`, tenant databases are provisioned via the queue, so
+> Horizon (or `php artisan queue:work redis`) **must** be running.
+
+### 6. Hosts / wildcard domains
+Add to `C:\Windows\System32\drivers\etc\hosts` (Laragon auto-vhosts may handle
+`*.local` for you):
+```
+127.0.0.1  noovapos.local
+127.0.0.1  abcgroup.noovapos.local
+```
+
+### 7. Open the app
+- Platform super admin: `http://noovapos.local` → **superadmin@noovapos-gls.com / 123456**
+- Demo tenant: `http://abcgroup.noovapos.local` → **tenant_owner@abcgroup.com / 123456**
+
+(Every seeded account uses password `123456` — see **Demo Users** below.)
+
+### One-shot rerun
+```bash
+composer install && php artisan migrate:fresh --seed && php artisan storage:link && npm install && npm run fetch:face-models && npm run build && php artisan horizon
+```
+
+> **HTTPS note:** WebAuthn (device-sensor biometric attendance) and camera access
+> require a secure context — they work on `localhost`, otherwise enable SSL for
+> the domain in Laragon.
+
+---
+
 ## Status — Audit Against CLAUDE.md (30-point spec)
 
 Legend: ✅ shipped · 🟡 partial / scaffolded · ⛔ not started
@@ -167,17 +250,390 @@ Audit Logs, Tenant Backups (queue/run/download).
 
 ## Roles (seeded)
 
-`platform_super_admin`, `tenant_owner`, `branch_manager`, `store_manager`,
-`shop_manager`, `cashier`, `accountant`, `waiter`, `delivery_staff`,
-`inventory_manager`.
+`platform_super_admin`, `admin`, `tenant_owner`, `branch_manager`,
+`shop_manager`, `cashier`, `accountant`, `inventory_manager`, `waiter`,
+`kitchen`, `delivery_staff`, `delivery_boy`.
 
-Default platform login (seeded):
+Restaurant back-of-house is covered by **`kitchen`** (KOT queue / kitchen
+display, read-only on sales) and **`delivery_boy`** (the rider who fulfils
+takeaway/delivery orders — sees assigned deliveries + their customers).
+`delivery_staff` is the water/distribution driver. All are seeded with
+permissions by `DefaultRoleSeeder`, and restaurant/water/distribution shop types
+get matching **role templates** (`waiter`, `kitchen`, `delivery_boy`) via
+`RoleTemplateSeeder`.
 
+---
+
+## SaaS Platform, Billing & Subscriptions
+
+The platform super admin operates NoovaPOS itself; tenants operate their own
+shops. System configuration is centralized to the super admin.
+
+### Super admin (central, `noovapos.local`)
+- **Platform → Tenants** — one row per tenant (stores nested), per-tenant
+  **Separate DB** toggle, and **Assign Plan** with billing cycle + duration
+  (months/years).
+- **Plans** — limits, features, **Allowed Countries** (country-based visibility),
+  and an **isolated-database** option (separate price + user allowance).
+- **Roles & Permissions** — role+permission **templates per shop type**
+  (permissions are super-admin-only; tenants instantiate roles from templates).
+- **Subscription Payments** — every tenant payment (subscription / add-on / FBR)
+  with the uploaded **proof image**; Confirm/Reject. Confirming activates the
+  subscription / raises limits / enables FBR.
+- **Bank Accounts** — payout accounts per country (shown to tenants by country).
+- **Billing Settings** — long-term discount %, add-on per-unit rates, and FBR
+  price — each **global or overridden per country**.
+- **Shop Types** — enable/disable the business types tenants may pick.
+- **System Settings** — Currencies, Languages, Payment Methods, Templates,
+  Settings, Dual Screen (centralized; removed from tenants).
+- **Offline & Sync**, **FBR (Pakistan)**, **Notifications**.
+
+### Tenant (`*.noovapos.local`)
+- **Billing & Plan** (`/app/billing`) — current plan, **trial countdown**,
+  usage vs limits (registers are a **monthly** quota, reset each month), where to
+  pay (country bank accounts), and a **payment request with required proof**.
+  Buy **add-ons** (extra shops/users/products) and, for **Pakistan tenants
+  only**, **enable/extend FBR**. Long-term discount auto-applies at the threshold.
+- **Hard lock** — when the trial/subscription expires, every page redirects to
+  Billing until the tenant renews.
+- Plans are filtered to the tenant's **country**.
+
+### Hierarchy & enforcement
 ```
-superadmin@noovapos-gls.com / 123456
+Tenant → Store (has a business type) → Shop (inherits & locks the store's type)
+       → User (assigned to stores + shops + a role)
 ```
+Plan limits (stores/shops/registers/users/products, plus purchased add-ons and
+separate-DB user allowance) are enforced on create via the subscription service.
+
+### Hybrid database-per-tenant
+Central DB by default (row-level `tenant_id`). Flip `TENANCY_DB_SWITCH=true` and
+toggle **Separate DB** per tenant to run flagged tenants on their own database
+(`ConditionalBootstrapTenancy`). See `database/migrations/tenant/` docs and run
+`php artisan tenancy:create-databases` to provision flagged tenants.
+
+### Seeding (central)
+`php artisan db:seed` runs, in order: roles → permissions → super admin →
+platform roles → settings → plans → **role templates** → **shop types** →
+**platform defaults** (billing settings + bank accounts) → demo tenant. The demo
+tenant (`HierarchyDemoSeeder`) is a **Pakistan** tenant exercising all shop
+types, stores with types, shops, and users-by-role/shop.
+
+---
+
+## Extended modules (recent build)
+
+Beyond the base SaaS/billing/hierarchy, these modules are now in place
+(backend + admin/config UI; the marketing CMS and customer kiosk are public too):
+
+- **Feature flags** — global (super admin: Platform → Features) ∧ per-store
+  (tenant: Settings → Store Features); resolved via `FeatureService`.
+- **Price tiers** — Retail/Wholesale/M20…; per-product tier prices; customer
+  default tier (Settings → Price Tiers). POS has a **price-tier selector** in the
+  cart that re-prices lines (defaults to the customer's tier).
+- **Unit hierarchy** — per-product box/bar/pack/piece with `factor_to_base`
+  (on the product form). POS has a **Mixed Units** action (gated by the
+  `unit_hierarchy` feature): enter box/pack/piece counts → converts to a base
+  quantity + stores `unit_breakdown` on the sale line
+  (`GET /products/{id}/unit-levels`).
+- **Deals / combos** — Inventory → Deals/Combos. POS has an **Add Deal** action
+  (gated by `deals`) that expands a combo into real product lines priced to sum
+  to the deal price (sale-save path unchanged).
+- **Subscription checkout** — alongside the manual "request" (proof upload)
+  method, tenants can **Pay online** via configurable channels: a global hosted
+  **payment link**, or Pakistan locals (**JazzCash, Easypaisa, HBL, Meezan,
+  UBL**, …). Super admin enables/disables each method and edits per-country
+  channels under **Platform → Billing Settings → Payment methods**. Hosted pay
+  page at `/billing/pay/{token}`.
+- **Restaurant** — halls, tables (with seats), **kitchens** + `kitchen` role,
+  KOT routing to the waiter's/hall's kitchen, **Send to Kitchen** + KOT print on
+  POS, kitchen display.
+  POS **Send to Kitchen** is gated by the `kitchen` feature and sends only the
+  **delta** (newly added quantity) on each press — a waiter can hold a bill, add
+  items, and reprint a KOT for just the new items.
+- **Delivery** — `delivery_boy` role + Sales → Deliveries board (assign + track).
+- **Customer kiosk** — `customer_displays` (token), public no-login page at
+  `/kiosk/{token}`, orders route a KOT to the display's kitchen and land on the
+  Customer Orders board (accept → assign waiter → served).
+- **Marketing CMS** — Platform → CMS Pages / Blog; public pages at `/p/{slug}`,
+  `/blog`, `/blog/{slug}` with SEO + per-country section visibility; the landing
+  top-menu is dynamic (shop-type pages + FBR + Blog).
+
+### Rerun the whole project (parent commands)
+
+```bash
+composer install
+composer require laravel/horizon
+php artisan horizon:publish
+php artisan key:generate
+php artisan migrate:fresh --seed
+php artisan storage:link
+npm install
+npm run build
+php artisan horizon
+```
+
+Notes: `QUEUE_CONNECTION=redis` (set) and Redis must be running, or queued work
+(FBR sync, imports, tenant-DB creation, notifications) won't process. `php artisan
+horizon` is the single worker for all queues (default / fbr / notifications /
+imports — see `config/horizon.php`); its dashboard is at `/horizon`, restricted to
+the platform super admin via `HorizonServiceProvider`. Use `migrate` instead of
+`migrate:fresh` to keep existing data.
+
+Re-seed specific pieces:
+`php artisan db:seed --class=DefaultRoleSeeder` ·
+`--class=ShopTypeSeeder` · `--class=RoleTemplateSeeder` ·
+`--class=PlatformDefaultsSeeder` · `--class=CmsSeeder` ·
+`--class=DefaultPlansSeeder` · `--class=AttendancePermissionSeeder`.
+
+### Attendance Management (POS-integrated)
+
+A full attendance + workforce module that reuses the existing HR `employees`
+table and the POS theme. Sidebar: **Attendance** → Dashboard · Check In/Out ·
+Live · Tasks · History · Face/Fingerprint Enrollment · Devices · Reports ·
+Requests · Settings.
+
+- **Kiosk** (`/app/attendance/checkin`) — big clock + method cards (Face,
+  Fingerprint, Barcode, QR, Manual). Smart flow: first scan of the day checks in
+  immediately; if already in, shows the action panel (tasks, break, check-out).
+- **Face recognition** is real and device-free via **face-api.js** (camera,
+  client-side 1:N match; only numeric descriptors stored). **Barcode/QR** use a
+  camera scanner (`html5-qrcode`) that also accepts USB scanners. Both libraries
+  are **self-hosted** in `public/vendor/` (no runtime CDN). The face model
+  weights are fetched once with `npm run fetch:face-models` (needs internet that
+  one time) into `public/vendor/face-api/models`; after that, face recognition
+  works fully offline / behind a firewall. Override paths via the `window.`
+  globals `FACEAPI_SRC` / `FACEAPI_MODEL_URL` / `HTML5_QRCODE_SRC` if needed.
+- **Fingerprint** camera capture is a *visual record* (future-ready), not a
+  match. Real fingerprint matching → connect a scanner via **Devices**.
+- **No-code Device Connectors** (`/app/attendance/devices`) — register any
+  external scanner / face terminal / cloud API by configuring its endpoint,
+  auth and request/response field-mapping; the platform calls it generically.
+  `run_on=server` (platform calls it) or `client` (kiosk calls a local
+  `localhost` agent). No code change to add a device.
+- **Tasks** (start/pause/resume/complete, office/personal), **Breaks**,
+  **Dashboard** (cards + charts + live timeline), **Live board**, **Reports**
+  (summary / productivity / performance), **Requests** (employee corrections →
+  manager approve/reject), and **Configuration → Attendance** (all toggles +
+  face/fingerprint matching mode).
+- Permissions: `attendance.*` (view, dashboard, checkin/out, manual, edit,
+  delete, task.*, face.*, fingerprint.*, device.*, request.*, report.*,
+  settings.*) seeded by `AttendancePermissionSeeder`.
+
+Run: `php artisan migrate && php artisan db:seed --class=AttendancePermissionSeeder`.
+
+### POS cart — now wired
+
+Price-tier selector, **Add Deal**, **Mixed Units**, feature-gated **Send to
+Kitchen** with delta-KOT reprint, and online subscription **checkout** are all
+in place. Each was verified per-file; run one **test sale** on a real build to
+confirm end-to-end before relying on them in production, since the sale-save and
+KOT paths can't be exercised in the dev sandbox.
+
+> Note: the printed customer slip already shows the sale/invoice id. The **FBR
+> invoice number** is assigned asynchronously by the FBR sync queue (Pakistan),
+> so it appears on the record/reprint once the sale has synced, not on the
+> first instant slip.
+
+---
+
+## Demo Users (seeded via `HierarchyDemoSeeder`)
+
+All demo accounts share the password: **`123456`**
+
+### Platform
+
+| Role | Email | Password |
+|------|-------|----------|
+| Platform Super Admin | superadmin@noovapos-gls.com | 123456 |
+
+### Tenant: ABC Group (`abcgroup.noovapos.local`)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Tenant Owner | tenant_owner@abcgroup.com | 123456 |
+| Branch Manager (Main Branch) | branch_manager@abcgroup.com | 123456 |
+| Branch Manager (City Branch) | branch_manager2@abcgroup.com | 123456 |
+
+#### Main Branch — Retail Counter
+
+| Role | Email | Password |
+|------|-------|----------|
+| Shop Manager | retail.manager@abcgroup.com | 123456 |
+| Cashier | retail.cashier@abcgroup.com | 123456 |
+| Inventory Manager | retail.inventory@abcgroup.com | 123456 |
+
+#### Main Branch — Restaurant Hall
+
+| Role | Email | Password |
+|------|-------|----------|
+| Shop Manager | restaurant.manager@abcgroup.com | 123456 |
+| Waiter | waiter@abcgroup.com | 123456 |
+| Kitchen | kitchen@abcgroup.com | 123456 |
+| Delivery Boy | delivery.boy@abcgroup.com | 123456 |
+
+#### Main Branch — Pharmacy Counter
+
+| Role | Email | Password |
+|------|-------|----------|
+| Cashier | pharmacy.cashier@abcgroup.com | 123456 |
+| Inventory Manager | pharmacy.inventory@abcgroup.com | 123456 |
+
+#### Main Branch — Bakery Counter
+
+| Role | Email | Password |
+|------|-------|----------|
+| Cashier | bakery.cashier@abcgroup.com | 123456 |
+
+#### Main Branch — Fashion Store
+
+| Role | Email | Password |
+|------|-------|----------|
+| Cashier | fashion.cashier@abcgroup.com | 123456 |
+
+#### City Branch — Water Supply Center
+
+| Role | Email | Password |
+|------|-------|----------|
+| Shop Manager | water.manager@abcgroup.com | 123456 |
+| Delivery Staff | water.delivery@abcgroup.com | 123456 |
+
+#### City Branch — Electronics Store
+
+| Role | Email | Password |
+|------|-------|----------|
+| Cashier | electronics.cashier@abcgroup.com | 123456 |
+| Inventory Manager | electronics.inventory@abcgroup.com | 123456 |
+
+#### City Branch — Distribution Hub
+
+| Role | Email | Password |
+|------|-------|----------|
+| Delivery Staff | distribution.driver@abcgroup.com | 123456 |
+| Inventory Manager | distribution.inventory@abcgroup.com | 123456 |
+
+#### City Branch — Monthly Services
+
+| Role | Email | Password |
+|------|-------|----------|
+| Shop Manager | service.manager@abcgroup.com | 123456 |
+| Accountant | service.accountant@abcgroup.com | 123456 |
+
+#### City Branch — Custom Business
+
+| Role | Email | Password |
+|------|-------|----------|
+| Cashier | custom.cashier@abcgroup.com | 123456 |
+
+---
 
 Tenants register at `/register-tenant`.
+
+---
+
+## Login & Domain Setup
+
+### How the login URL works
+
+| Who | URL | Notes |
+|-----|-----|-------|
+| Super Admin | `http://noovapos.local/login` | Central domain — no subdomain |
+| Tenant Owner / Staff | `http://abcgroup.noovapos.local/login` | Subdomain identifies the tenant |
+
+### Common login error: "Hostname does not include a subdomain"
+
+**Cause:** Stancl Tenancy's subdomain middleware was running on the central domain (`noovapos.local`) and throwing before the login controller was reached.
+
+**Fix applied:** `App\Http\Middleware\InitializeTenancyForApi` now wraps the Stancl middleware. It detects central domains and passes the request through without tenancy initialization. Tenant subdomains still go through normal tenancy bootstrapping.
+
+If you still see the error after pulling, run:
+
+```bash
+php artisan config:clear
+php artisan cache:clear
+php artisan optimize:clear
+```
+
+### Architecture: single central DB (not separate DB per tenant)
+
+NoovaPOS uses **one central MySQL database** (`noovapos`) with `tenant_id` row-level scoping via the `Multitenantable` trait. There is **no separate database per tenant**.
+
+Stancl Tenancy is used only for **subdomain identification** — it reads `abcgroup.noovapos.local` → looks up the `abcgroup` domain in the `domains` table → sets `tenancy()->tenant` so the app knows which tenant is active. The database is never switched.
+
+`DatabaseTenancyBootstrapper` is disabled in `config/tenancy.php` for this reason.
+
+---
+
+### Laragon setup (Windows)
+
+**Step 1 — Hosts file** (`C:\Windows\System32\drivers\etc\hosts`, open as Administrator):
+
+```
+127.0.0.1   noovapos.local
+127.0.0.1   superadmin.noovapos.local
+127.0.0.1   abcgroup.noovapos.local
+```
+
+Add one line per tenant subdomain you need to test. Laragon does not support wildcard DNS by default — each subdomain must be listed explicitly.
+
+**Step 2 — Laragon wildcard virtual host**
+
+Laragon auto-creates a vhost for `noovapos.local` but not for `*.noovapos.local`. You need to add a wildcard vhost manually.
+
+Open: `C:\laragon\etc\nginx\sites-enabled\noovapos.local.conf` (or create it)
+
+Add a second server block for the wildcard:
+
+```nginx
+# Wildcard: handles abcgroup.noovapos.local, anyother.noovapos.local, etc.
+server {
+    listen 80;
+    server_name *.noovapos.local;
+    root "D:/laragon/www/noovapos/public";
+
+    index index.php index.html;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass php_upstream;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+```
+
+Then **restart Laragon** (right-click tray icon → Reload / Restart All).
+
+**Step 3 — Verify**
+
+```bash
+# Should return the Laravel app HTML
+curl -H "Host: abcgroup.noovapos.local" http://127.0.0.1/
+```
+
+`.env` must have:
+
+```env
+APP_URL=http://noovapos.local
+CENTRAL_DOMAIN=noovapos.local
+TENANT_BASE_DOMAIN=noovapos.local
+```
+
+### Common login error: "CSRF token mismatch"
+
+**Cause:** `EnsureFrontendRequestsAreStateful` was in the API middleware group and `noovapos.local` was listed in `SANCTUM_STATEFUL_DOMAINS`. Sanctum activated cookie/CSRF mode for every request from the central domain, then rejected the login POST because no CSRF cookie was fetched first.
+
+**Fix applied:** `EnsureFrontendRequestsAreStateful` removed from `Kernel.php` api group. This app uses **Bearer token auth** (token stored in a JS cookie, sent as `Authorization: Bearer …`), not Sanctum's stateful SPA mode. CSRF protection is unnecessary and actively harmful here. `SANCTUM_STATEFUL_DOMAINS` reduced to `localhost,127.0.0.1`.
+
+---
+
+### Why the login API had no network call before
+
+`environment.js` was hardcoding `:8000` for `localhost` requests, pointing axios at the wrong port (Laragon uses port 80). It now reads `window.location.port` directly, so it works on Laragon (port 80 → no suffix), `php artisan serve` (port 8000), and production (port 443).
 
 ---
 

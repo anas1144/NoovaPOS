@@ -120,9 +120,14 @@ class PlatformSaasController extends AppBaseController
     public function subscriptions(Request $request): JsonResponse
     {
         $perPage = getPageSize($request);
+        // Join only the tenant's default store so a tenant with multiple stores
+        // produces ONE subscription row (not one per store).
         $query = Subscription::query()
             ->with('plan:id,name,slug,price,billing_cycle')
-            ->leftJoin('stores', 'stores.tenant_id', '=', 'subscriptions.tenant_id')
+            ->leftJoin('stores', function ($j) {
+                $j->on('stores.tenant_id', '=', 'subscriptions.tenant_id')
+                    ->where('stores.is_default', '=', true);
+            })
             ->select('subscriptions.*', 'stores.name as tenant_name');
 
         foreach (['tenant_id', 'plan_id', 'status'] as $field) {
@@ -150,6 +155,8 @@ class PlatformSaasController extends AppBaseController
             'trial_ends_at' => 'nullable|date',
             'renews_at' => 'nullable|date',
             'ends_at' => 'nullable|date',
+            'billing_cycle' => 'nullable|in:monthly,yearly',
+            'periods' => 'nullable|integer|min:1|max:60',
             'meta' => 'nullable|array',
         ]);
 
@@ -173,14 +180,25 @@ class PlatformSaasController extends AppBaseController
             $startsAt = isset($input['starts_at']) ? Carbon::parse($input['starts_at']) : now();
             $trialEndsAt = $input['trial_ends_at'] ?? ($plan->trial_days > 0 ? $startsAt->copy()->addDays($plan->trial_days) : null);
 
+            // Multi-period support: if billing_cycle + periods given (and no explicit
+            // ends_at), compute the paid-through date for N months/years.
+            $endsAt = $input['ends_at'] ?? null;
+            if (! $endsAt && ! empty($input['periods'])) {
+                $cycle = $input['billing_cycle'] ?? 'monthly';
+                $periods = (int) $input['periods'];
+                $endsAt = $cycle === 'yearly'
+                    ? $startsAt->copy()->addYears($periods)
+                    : $startsAt->copy()->addMonths($periods);
+            }
+
             $subscription = Subscription::create([
                 'tenant_id' => $tenant->id,
                 'plan_id' => $plan->id,
                 'status' => $status,
                 'starts_at' => $startsAt,
                 'trial_ends_at' => $trialEndsAt,
-                'renews_at' => $input['renews_at'] ?? null,
-                'ends_at' => $input['ends_at'] ?? null,
+                'renews_at' => $input['renews_at'] ?? $endsAt,
+                'ends_at' => $endsAt,
                 'meta' => $input['meta'] ?? null,
             ]);
 
@@ -215,7 +233,10 @@ class PlatformSaasController extends AppBaseController
         $perPage = getPageSize($request);
         $query = AuditLog::query()
             ->with('actor:id,first_name,last_name,email')
-            ->leftJoin('stores', 'stores.tenant_id', '=', 'audit_logs.tenant_id')
+            ->leftJoin('stores', function ($j) {
+                $j->on('stores.tenant_id', '=', 'audit_logs.tenant_id')
+                    ->where('stores.is_default', '=', true);
+            })
             ->select('audit_logs.*', 'stores.name as tenant_name');
 
         foreach (['tenant_id', 'actor_id', 'event', 'auditable_type', 'auditable_id'] as $field) {
@@ -240,7 +261,10 @@ class PlatformSaasController extends AppBaseController
         $perPage = getPageSize($request);
         $query = TenantBackup::query()
             ->with('requester:id,first_name,last_name,email')
-            ->leftJoin('stores', 'stores.tenant_id', '=', 'tenant_backups.tenant_id')
+            ->leftJoin('stores', function ($j) {
+                $j->on('stores.tenant_id', '=', 'tenant_backups.tenant_id')
+                    ->where('stores.is_default', '=', true);
+            })
             ->select('tenant_backups.*', 'stores.name as tenant_name');
 
         foreach (['tenant_id', 'status', 'backup_type'] as $field) {
@@ -351,6 +375,11 @@ class PlatformSaasController extends AppBaseController
             'max_users' => 'nullable|integer|min:0',
             'max_products' => 'nullable|integer|min:0',
             'features' => 'nullable|array',
+            'allowed_countries' => 'nullable|array',
+            'allowed_countries.*' => 'string|max:5',
+            'offers_separate_db' => 'nullable|boolean',
+            'separate_db_price' => 'nullable|numeric|min:0',
+            'separate_db_max_users' => 'nullable|integer|min:0',
             'status' => 'nullable|boolean',
         ]);
     }

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\CentralConnection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditLog extends BaseModel
 {
-    use HasFactory;
+    use HasFactory, CentralConnection;
 
     public const UPDATED_TENANT_STATUS = 'tenant.status.updated';
     public const UPDATED_TENANT_SUBSCRIPTION = 'tenant.subscription.updated';

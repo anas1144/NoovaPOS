@@ -125,7 +125,7 @@ export const changeStore =
                         text: getFormattedMessage("store.changed.message"),
                     })
                 );
-                navigate('/dashboard');
+                navigate('/app/dashboard');
                 dispatch(fetchFrontSetting())
                 dispatch(fetchStore());
             })

@@ -6,7 +6,7 @@ import Header from "./header/Header";
 import Footer from "./footer/Footer";
 import AsideTopSubMenuItem from "./sidebar/asideTopSubMenuItem";
 import { Tokens } from "../constants";
-import asideConfig from "../config/asideConfig";
+import { buildAsideConfig } from "../config/asideConfig";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { fetchConfig } from "../store/action/configAction";
@@ -19,10 +19,13 @@ const MasterLayout = (props) => {
         fetchConfig,
         config,
         allConfigData,
+        userRoles,
+        shopType,
     } = props;
     const [isResponsiveMenu, setIsResponsiveMenu] = useState(false);
     const [isMenuCollapse, setIsMenuCollapse] = useState(false);
-    const newRoutes = config && prepareRoutes(config);
+    // Pass actual user roles so platform_super_admin sees Tenant management etc.
+    const newRoutes = config && prepareRoutes(config, userRoles, shopType);
     const token = localStorage.getItem(Tokens.ADMIN);
     const navigate = useNavigate();
 
@@ -69,7 +72,7 @@ const MasterLayout = (props) => {
                             <FontAwesomeIcon icon={faBars} className="fs-1" />
                         </button>
                         <AsideTopSubMenuItem
-                            asideConfig={asideConfig}
+                            asideConfig={newRoutes || []}
                             isMenuCollapse={isMenuCollapse}
                         />
                         <Header newRoutes={newRoutes} />
@@ -103,10 +106,21 @@ const getRouteWithSubMenu = (route, permissions) => {
     return newSubRoutes;
 };
 
-const prepareRoutes = (config) => {
+const prepareRoutes = (config, userRoles = [], shopType = "retail") => {
     const permissions = config;
+
+    // Build the sidebar with the actual logged-in user's roles so
+    // platform_super_admin sees the Platform/Tenant section,
+    // cashier sees only POS items, etc.
+    const fullMenu = buildAsideConfig(shopType, userRoles, permissions);
+
     let filterRoutes = [];
-    asideConfig.forEach((route) => {
+    fullMenu.forEach((route) => {
+        // Skip section dividers — they have no `to` or `permission` and the
+        // sidebar renders them as <Link to={undefined}> which throws.
+        // Section labels are decorative only; the sidebar does not render them.
+        if (route.type === "section") return;
+
         const permissionsRoute = getRouteWithSubMenu(route, permissions);
         if (
             (permissions && permissions.indexOf(route.permission) !== -1) ||
@@ -121,15 +135,22 @@ const prepareRoutes = (config) => {
 
 const mapStateToProps = (state) => {
     const newPermissions = [];
-    const { permissions, settings, frontSetting, config, allConfigData } =
-        state;
+    const { permissions, settings, frontSetting, config, allConfigData, loginUser } = state;
 
     if (permissions) {
         permissions.forEach((permission) =>
             newPermissions.push(permission.attributes.name)
         );
     }
-    return { newPermissions, settings, frontSetting, config, allConfigData };
+
+    // Normalise roles to always be an array
+    const userRoles = loginUser?.roles
+        ? (Array.isArray(loginUser.roles) ? loginUser.roles : [loginUser.roles])
+        : [];
+
+    const shopType = loginUser?.shop_type ?? "retail";
+
+    return { newPermissions, settings, frontSetting, config, allConfigData, loginUser, userRoles, shopType };
 };
 
 export default connect(mapStateToProps, { fetchConfig })(MasterLayout);

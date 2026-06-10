@@ -10,6 +10,10 @@ import { fetchConfig } from "./configAction";
 import Cookies from 'js-cookie';
 
 const permissionMappings = {
+    // Platform-level (superadmin) — checked first in redirect logic
+    manage_platform: "/app/platform/dashboard",
+    manage_tenants:  "/app/platform/tenants",
+    // Tenant-level
     manage_dashboard: "/app/dashboard",
     manage_roles: "/app/roles",
     manage_brands: "/app/brands",
@@ -93,24 +97,50 @@ export const loginAction = (user, navigate, setLoading) => async (dispatch) => {
         );
 
         const userPermissions = response.data.data.permissions;
-        const mappedRoutes = userPermissions.map(mapPermissionToRoute);
-        const isPosOnlyUser = mappedRoutes.length === 1 && userPermissions.includes("manage_pos_screen");
-        
-        // For POS-only users, set a flag to show register modal on mount
+        // roles is returned at response.data.data.roles (string e.g. "platform_super_admin")
+        const userRole        = response.data.data.roles ?? '';
+        const mappedRoutes    = userPermissions.map(mapPermissionToRoute);
+        const isPosOnlyUser   = mappedRoutes.length === 1 && userPermissions.includes("manage_pos_screen");
+
         if (isPosOnlyUser) {
             localStorage.setItem('showRegisterModalOnPosMount', 'true');
         }
-        
+
+        // If a tenant user logs in from the central domain, redirect them to
+        // their tenant subdomain so all API calls are scoped correctly.
+        const tenantDomain  = response.data.data.tenant_domain;
+        const currentHost   = window.location.hostname;
+        const centralDomain = currentHost; // noovapos.local or 127.0.0.1
+
+        const isCentralDomain = !tenantDomain ||
+            currentHost === tenantDomain ||
+            currentHost.endsWith('.' + (tenantDomain?.split('.').slice(1).join('.') || ''));
+
+        const isSuperAdmin = userRole === 'platform_super_admin';
+
+        if (!isSuperAdmin && tenantDomain && currentHost !== tenantDomain) {
+            // Tenant user on wrong domain → redirect to their subdomain with token in URL
+            // The token is already in the cookie, so just redirect to their login page.
+            // They'll be auto-logged in via persisted Redux state on the subdomain.
+            const protocol = window.location.protocol;
+            const port = window.location.port ? `:${window.location.port}` : '';
+            window.location.href = `${protocol}//${tenantDomain}${port}/app/dashboard`;
+            return;
+        }
+
         if (mappedRoutes && mappedRoutes.length > 0) {
-            if (userPermissions.includes("manage_dashboard")) {
-                // If 'manage_dashboard' permission is present, redirect to the first permission
+            // Platform super-admin → go directly to platform dashboard
+            if (
+                userRole === 'platform_super_admin' ||
+                userPermissions.includes("manage_platform") ||
+                userPermissions.includes("manage_tenants")
+            ) {
+                navigate("/app/platform/dashboard");
+            } else if (userPermissions.includes("manage_dashboard")) {
                 navigate("/app/dashboard");
-            }
-             else if(isPosOnlyUser){
+            } else if (isPosOnlyUser) {
                 navigate("/app/pos");
-            }
-            else {
-                // If 'manage_dashboard' is not present, redirect to the first permission route
+            } else {
                 navigate(mappedRoutes[0]);
             }
         } else {
@@ -125,9 +155,11 @@ export const loginAction = (user, navigate, setLoading) => async (dispatch) => {
         );
         const isLanguageDataFetched = await dispatch(fetchLanguageData(response.data.data.user.language_id));
     } catch (error) {
-        dispatch(
-            addToast({ text: error.response?.data?.message || "Login failed", type: toastType.ERROR })
-        );
+        const msg =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            'Login failed. Please check your credentials.';
+        dispatch(addToast({ text: msg, type: toastType.ERROR }));
         setLoading(false);
     }
 };
