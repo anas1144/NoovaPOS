@@ -48,6 +48,7 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
     const isWaterSupply    = shopType === "water_supply";
     const isMonthlyService = shopType === "monthly_service";
     const isDistribution   = shopType === "distribution";
+    const isFbrDigital     = shopType === "fbr_digital";
 
     const config = [];
 
@@ -97,6 +98,7 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
                 { title: "Blog",               to: "/app/platform/blog",          fontIcon: <FontAwesomeIcon icon={faFileLines} />,     class: "d-flex", permission: "" },
                 { title: "Audit Logs",         to: "/app/platform/audit-logs",    fontIcon: <FontAwesomeIcon icon={faFileLines} />,     class: "d-flex", permission: "" },
                 { title: "Tenant Backups",     to: "/app/platform/backups",       fontIcon: <FontAwesomeIcon icon={faDatabase} />,      class: "d-flex", permission: "" },
+                { title: "FBR-DI Plans",       to: "/app/platform/fbr-di",        fontIcon: <FontAwesomeIcon icon={faFileShield} />,    class: "d-flex", permission: "" },
             ],
         });
 
@@ -563,6 +565,36 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
             to: "/app/crm/pipeline",
             class: "d-flex",
             permission: "",
+        });
+    }
+
+    // ── FBR DIGITAL INVOICE (dedicated shop type — no POS billing) ────
+    if (isFbrDigital || hasPerm("fbr_invoice_view")) {
+        config.push({ type: "section", label: "FBR Digital Invoice" });
+
+        config.push({
+            title: "FBR Invoicing",
+            name: "fbr-di",
+            fontIcon: <FontAwesomeIcon icon={faFileShield} />,
+            to: "/app/fbr-di/dashboard",
+            class: "d-flex",
+            is_submenu: "true",
+            permission: "fbr_invoice_view",
+            subPath: {
+                fbrDiDashboardSubPath:  "/app/fbr-di/dashboard",
+                fbrDiInvoicesSubPath:   "/app/fbr-di/invoices",
+                fbrDiBusinessesSubPath: "/app/fbr-di/businesses",
+                fbrDiErrorsSubPath:     "/app/fbr-di/errors",
+                fbrDiSandboxSubPath:    "/app/fbr-di/sandbox",
+            },
+            newRoute: [
+                { title: "Dashboard",  to: "/app/fbr-di/dashboard",  fontIcon: <FontAwesomeIcon icon={faPieChart} />,   class: "d-flex", permission: "fbr_invoice_view" },
+                { title: "Invoices",   to: "/app/fbr-di/invoices",   fontIcon: <FontAwesomeIcon icon={faReceipt} />,    class: "d-flex", permission: "fbr_invoice_view" },
+                { title: "Businesses", to: "/app/fbr-di/businesses", fontIcon: <FontAwesomeIcon icon={faBuilding} />,   class: "d-flex", permission: "fbr_business_manage" },
+                { title: "Reports",    to: "/app/fbr-di/reports",    fontIcon: <FontAwesomeIcon icon={faChartColumn} />, class: "d-flex", permission: "fbr_invoice_reports" },
+                { title: "Error Center", to: "/app/fbr-di/errors",   fontIcon: <FontAwesomeIcon icon={faFileShield} />, class: "d-flex", permission: "fbr_invoice_errors" },
+                { title: "Sandbox Testing", to: "/app/fbr-di/sandbox", fontIcon: <FontAwesomeIcon icon={faServer} />,   class: "d-flex", permission: "fbr_invoice_testing" },
+            ],
         });
     }
 

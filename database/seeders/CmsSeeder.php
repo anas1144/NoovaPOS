@@ -73,6 +73,34 @@ class CmsSeeder extends Seeder
             '<h2 class="text-3xl font-bold">FBR Digital Invoicing</h2>'.
             '<p class="mt-2 text-slate-600">NoovaPOS integrates with FBR for real-time digital invoicing, QR-coded invoices and automatic sync — available to Pakistan tenants as an add-on.</p>',
             ['PK']);
+
+        // Dedicated "FBR Digital Invoicing" product page (standalone shop type) —
+        // shown in the top menu, manageable by the super admin via CMS.
+        $diPage = CmsPage::updateOrCreate(
+            ['slug' => 'fbr-digital-invoicing'],
+            [
+                'title'        => 'FBR Digital Invoicing',
+                'type'         => 'fbr',
+                'show_in_menu' => true,
+                'menu_order'   => $order++,
+                'seo_title'    => 'FBR Digital Invoicing Software — NoovaPOS',
+                'seo_description' => 'Dedicated FBR Digital Invoicing for businesses that only need FBR invoices: generation, integration, real-time sync, error tracking, sandbox testing, QR codes, compliance reports and multi-business support.',
+                'status'       => true,
+                'is_system'    => true,
+            ]
+        );
+        $this->section($diPage->id, 'intro', 'html',
+            '<h2 class="text-3xl font-bold">FBR Digital Invoicing</h2>'.
+            '<p class="mt-2 text-slate-600">A dedicated FBR Digital Invoicing solution — no POS billing required. Create, sync and manage FBR-registered invoices for one company or, as an agent, for many.</p>'.
+            '<ul class="mt-4 grid gap-2 text-slate-700">'.
+            '<li>✔ FBR Registered Invoice Generation</li>'.
+            '<li>✔ FBR Integration &amp; Real-time Sync</li>'.
+            '<li>✔ Error Tracking &amp; Sandbox Testing</li>'.
+            '<li>✔ QR Code Generation</li>'.
+            '<li>✔ FBR Compliance Reports</li>'.
+            '<li>✔ Multi-Business &amp; Agent Support</li>'.
+            '</ul>',
+            ['PK']);
     }
 
     private function section(int $pageId, string $key, string $type, string $content, ?array $countries = null): void

@@ -36,6 +36,15 @@ use App\Http\Controllers\API\DeviceConnectorController;
 use App\Http\Controllers\API\AttendanceRequestController;
 use App\Http\Controllers\API\AttendanceReportController;
 use App\Http\Controllers\API\WebAuthnController;
+use App\Http\Controllers\API\FbrBusinessController;
+use App\Http\Controllers\API\FbrDiInvoiceController;
+use App\Http\Controllers\API\FbrDiSyncController;
+use App\Http\Controllers\API\FbrErrorController;
+use App\Http\Controllers\API\FbrSandboxController;
+use App\Http\Controllers\API\FbrDiDashboardController;
+use App\Http\Controllers\API\FbrDiLimitController;
+use App\Http\Controllers\API\FbrAgentController;
+use App\Http\Controllers\API\FbrReportController;
 use App\Http\Controllers\API\PlatformPaymentController;
 use App\Http\Controllers\API\PlatformBankAccountController;
 use App\Http\Controllers\API\PlatformSettingController;
@@ -118,6 +127,12 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
         // the per-country online checkout channels.
         Route::get('billing-methods', [PlatformSettingController::class, 'billingMethods']);
         Route::post('billing-methods', [PlatformSettingController::class, 'updateBillingMethods']);
+        // FBR Digital Invoice plan limits + agent (company) assignments
+        Route::get('fbr-di/limits', [FbrDiLimitController::class, 'index']);
+        Route::post('fbr-di/limits', [FbrDiLimitController::class, 'upsert']);
+        Route::get('fbr-di/agents', [FbrAgentController::class, 'index']);
+        Route::post('fbr-di/agents/attach', [FbrAgentController::class, 'attach']);
+        Route::post('fbr-di/agents/detach', [FbrAgentController::class, 'detach']);
         // Shop-type registry (enable/disable business types)
         Route::get('shop-types', [PlatformShopTypeController::class, 'index']);
         Route::post('shop-types', [PlatformShopTypeController::class, 'store']);
@@ -568,6 +583,32 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
     Route::post('attendance/webauthn/register', [WebAuthnController::class, 'register']);
     Route::post('attendance/webauthn/login-options', [WebAuthnController::class, 'loginOptions']);
     Route::post('attendance/webauthn/verify', [WebAuthnController::class, 'verify']);
+
+    // FBR Digital Invoice module (standalone shop type)
+    Route::get('fbr-di/businesses', [FbrBusinessController::class, 'index']);
+    Route::post('fbr-di/businesses', [FbrBusinessController::class, 'store']);
+    Route::get('fbr-di/businesses/{fbrBusiness}', [FbrBusinessController::class, 'show']);
+    Route::patch('fbr-di/businesses/{fbrBusiness}', [FbrBusinessController::class, 'update']);
+    Route::delete('fbr-di/businesses/{fbrBusiness}', [FbrBusinessController::class, 'destroy']);
+
+    Route::get('fbr-di/invoices', [FbrDiInvoiceController::class, 'index']);
+    Route::post('fbr-di/invoices', [FbrDiInvoiceController::class, 'store']);
+    Route::get('fbr-di/invoices/{id}', [FbrDiInvoiceController::class, 'show']);
+    Route::patch('fbr-di/invoices/{id}', [FbrDiInvoiceController::class, 'update']);
+    Route::delete('fbr-di/invoices/{id}', [FbrDiInvoiceController::class, 'destroy']);
+    // Controlled sync (permission-gated)
+    Route::post('fbr-di/invoices/{id}/sync', [FbrDiSyncController::class, 'sync']);
+    Route::post('fbr-di/invoices/bulk-sync', [FbrDiSyncController::class, 'bulkSync']);
+    // Error Center + Sandbox Testing Center
+    Route::get('fbr-di/errors', [FbrErrorController::class, 'index']);
+    Route::get('fbr-di/sandbox', [FbrSandboxController::class, 'index']);
+    Route::post('fbr-di/sandbox/{id}/run', [FbrSandboxController::class, 'run']);
+    Route::get('fbr-di/dashboard', [FbrDiDashboardController::class, 'dashboard']);
+    // FBR reports
+    Route::get('fbr-di/reports/sales', [FbrReportController::class, 'sales']);
+    Route::get('fbr-di/reports/tax', [FbrReportController::class, 'tax']);
+    Route::get('fbr-di/reports/sync', [FbrReportController::class, 'sync']);
+    Route::get('fbr-di/reports/rejected', [FbrReportController::class, 'rejected']);
 
     // Attendance reports
     Route::get('attendance/reports/summary', [AttendanceReportController::class, 'summary']);

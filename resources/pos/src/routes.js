@@ -148,6 +148,14 @@ import AttendanceSettings from "./components/attendance/AttendanceSettings";
 import AttendanceReports from "./components/attendance/AttendanceReports";
 import AttendanceRequests from "./components/attendance/AttendanceRequests";
 import DeviceConnectors from "./components/attendance/DeviceConnectors";
+import FbrBusinesses from "./components/fbrDigital/FbrBusinesses";
+import FbrInvoices from "./components/fbrDigital/FbrInvoices";
+import FbrInvoiceForm from "./components/fbrDigital/FbrInvoiceForm";
+import FbrErrors from "./components/fbrDigital/FbrErrors";
+import FbrSandbox from "./components/fbrDigital/FbrSandbox";
+import FbrDashboard from "./components/fbrDigital/FbrDashboard";
+import FbrReports from "./components/fbrDigital/FbrReports";
+import PlatformFbrDi from "./components/platform/PlatformFbrDi";
 import Pipeline from "./components/crm/Pipeline";
 
 export const route = [
@@ -905,6 +913,56 @@ export const route = [
     {
         path: "attendance/devices",
         ele: <DeviceConnectors />,
+        permission: "",
+    },
+    {
+        path: "fbr-di/businesses",
+        ele: <FbrBusinesses />,
+        permission: "",
+    },
+    {
+        path: "fbr-di/invoices",
+        ele: <FbrInvoices />,
+        permission: "",
+    },
+    {
+        path: "fbr-di/invoices/create",
+        ele: <FbrInvoiceForm />,
+        permission: "",
+    },
+    {
+        path: "fbr-di/invoices/:id",
+        ele: <FbrInvoiceForm />,
+        permission: "",
+    },
+    {
+        path: "fbr-di/invoices/:id/edit",
+        ele: <FbrInvoiceForm />,
+        permission: "",
+    },
+    {
+        path: "fbr-di/errors",
+        ele: <FbrErrors />,
+        permission: "",
+    },
+    {
+        path: "fbr-di/sandbox",
+        ele: <FbrSandbox />,
+        permission: "",
+    },
+    {
+        path: "fbr-di/dashboard",
+        ele: <FbrDashboard />,
+        permission: "",
+    },
+    {
+        path: "fbr-di/reports",
+        ele: <FbrReports />,
+        permission: "",
+    },
+    {
+        path: "platform/fbr-di",
+        ele: <PlatformFbrDi />,
         permission: "",
     },
     {

@@ -71,6 +71,7 @@ class Role extends roleModal
     const DELIVERY_STAFF    = 'delivery_staff';
     const KITCHEN           = 'kitchen';
     const DELIVERY_BOY      = 'delivery_boy';
+    const FBR_AGENT         = 'fbr_agent';     // manages multiple companies (FBR Digital Invoice)
 
     public static $rules = [
         'name' => 'required|unique:roles',

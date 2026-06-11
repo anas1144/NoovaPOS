@@ -23,6 +23,7 @@ class Plan extends BaseModel
         'fashion'           => 'Fashion Store POS',
         'distribution'      => 'Distribution POS',
         'monthly_service'   => 'Monthly Service POS',
+        'fbr_digital'       => 'FBR Digital Invoice',
         'custom'            => 'Custom Business Type',
     ];
 
@@ -64,6 +65,11 @@ class Plan extends BaseModel
         ],
         'custom' => [
             'pos', 'inventory', 'sales', 'purchases', 'reports',
+        ],
+        // FBR Digital Invoice: NO pos/billing — dedicated FBR invoicing only.
+        'fbr_digital' => [
+            'fbr_invoices', 'fbr_sync', 'fbr_reports', 'fbr_errors',
+            'fbr_sandbox', 'customers', 'products', 'grn', 'rtc',
         ],
     ];
 

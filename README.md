@@ -422,6 +422,38 @@ Requests · Settings.
 
 Run: `php artisan migrate && php artisan db:seed --class=AttendancePermissionSeeder`.
 
+### FBR Digital Invoice (standalone shop type)
+
+A dedicated **FBR Digital Invoicing** shop type (`fbr_digital`) for businesses
+that only need FBR invoices — **no POS billing**. Built as a self-contained
+`fbr_di_*` module, separate from the POS-side FBR add-on. Hierarchy: **Company =
+Tenant**, **Business = Store**; an **`fbr_agent`** role manages multiple
+companies (`agent_tenants`).
+
+- **Businesses** (`/app/fbr-di/businesses`) — FBR sellers (NTN/STRN, province,
+  sandbox/production tokens, environment).
+- **Invoices** (`/app/fbr-di/invoices`) — create **Draft** with line items +
+  auto totals; edit/delete only while Draft; **controlled Sync** (permission
+  `fbr_invoice_sync`) queues `SyncFbrDiInvoiceJob` on the `fbr` queue →
+  `pending_sync → syncing → accepted | rejected`, capturing the FBR invoice
+  number, QR payload and errors. Synced/accepted/rejected are locked.
+- **Dashboard** (`/app/fbr-di/dashboard`) — totals, plan consumption, recent
+  errors. **Reports** (`/app/fbr-di/reports`) — Sales / Tax / Sync / Rejected.
+  **Error Center** (`/app/fbr-di/errors`) and **Sandbox Testing** (SN001–SN028,
+  `/app/fbr-di/sandbox`).
+- **Plan quotas** (`fbr_di_limits`): Single Company / Agent, monthly-invoice +
+  businesses caps (blank = unlimited), enforced on create. Super admin manages
+  limits + agent→company assignment at **Platform → FBR-DI Plans**
+  (`/app/platform/fbr-di`).
+- **Audit logs** for invoice create/edit/sync/delete. Permissions `fbr_invoice_*`
+  (+ `fbr_business_manage`, `fbr_agent_manage`) via `FbrInvoicePermissionSeeder`.
+  Landing CMS page **FBR Digital Invoicing** (`/p/fbr-digital-invoicing`).
+- FBR endpoints are env-configurable: `FBR_DI_SANDBOX_URL`, `FBR_DI_PROD_URL`.
+
+Run: `php artisan migrate && php artisan db:seed --class=FbrInvoicePermissionSeeder`
+` && php artisan db:seed --class=FbrErrorCodeSeeder && php artisan db:seed --class=FbrSandboxScenarioSeeder`.
+Real submission needs Horizon running + a valid integrator token on the business.
+
 ### POS cart — now wired
 
 Price-tier selector, **Add Deal**, **Mixed Units**, feature-gated **Send to

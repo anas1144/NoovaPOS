@@ -43,6 +43,9 @@ class RelocateBusinessMigrations extends Command
         'create_subscriptions_table',
         'create_audit_logs_table',
         'create_tenant_backups_table',
+        // FBR-DI platform-only tables (cross-tenant / super-admin managed).
+        'create_agent_tenants_table',
+        'create_fbr_di_limits_table',
     ];
 
     public function handle(): int

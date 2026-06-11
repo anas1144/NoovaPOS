@@ -765,6 +765,18 @@ Recently built on top of the SaaS/billing/hierarchy core:
   with no code changes. Permissions `attendance.*`; seeder
   AttendancePermissionSeeder.
 
+- FBR Digital Invoice (standalone shop type `fbr_digital`, distinct from the
+  POS-side FBR add-on): dedicated FBR invoicing with NO POS billing. Tables
+  fbr_businesses, fbr_di_invoices(+items), fbr_error_codes, fbr_sandbox_scenarios,
+  fbr_di_limits, agent_tenants. Company=Tenant, Business=Store, fbr_agent role
+  manages many companies. Draft → controlled Sync (perm fbr_invoice_sync, queued
+  SyncFbrDiInvoiceJob on `fbr` queue) → accepted|rejected; lock on synced. Error
+  Center, Sandbox (SN001–028), Dashboard, Reports (sales/tax/sync/rejected),
+  per-company quota (monthly invoices + businesses), agent assignment + limits at
+  Platform → FBR-DI Plans, audit logs, CMS landing page. Endpoints via
+  FBR_DI_SANDBOX_URL / FBR_DI_PROD_URL. Seeders FbrInvoicePermissionSeeder,
+  FbrErrorCodeSeeder, FbrSandboxScenarioSeeder.
+
 Notes:
 - FBR remains Pakistan-only; the FBR invoice number is assigned asynchronously by
   the FBR sync queue, so it appears on record/reprint after sync, not on the

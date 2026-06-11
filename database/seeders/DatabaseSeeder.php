@@ -29,6 +29,9 @@ class DatabaseSeeder extends Seeder
         $this->call(AddPurchaseReturnAndSaleReturnPermissionsSeeder::class);
         $this->call(GenerateCrudPermissionsSeeder::class);
         $this->call(AttendancePermissionSeeder::class);
+        $this->call(FbrInvoicePermissionSeeder::class);
+        $this->call(FbrErrorCodeSeeder::class);
+        $this->call(FbrSandboxScenarioSeeder::class);
 
         // ── 3. Platform super-admin user + sync ALL permissions to superadmin role
         $this->call(DefaultUserSeeder::class);

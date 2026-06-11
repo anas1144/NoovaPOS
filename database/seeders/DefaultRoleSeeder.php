@@ -80,6 +80,10 @@ class DefaultRoleSeeder extends Seeder
                 'name'         => AppRole::DELIVERY_BOY,
                 'display_name' => 'Delivery Boy',
             ],
+            [
+                'name'         => AppRole::FBR_AGENT,
+                'display_name' => 'FBR Agent',
+            ],
         ];
 
         // Create roles that do not exist yet
