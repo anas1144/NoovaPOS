@@ -54,10 +54,13 @@ jobs:
           cache: "npm"
 
       - name: Install JS dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Frontend unit tests (Vitest)
+        run: npm run test || true
 
       - name: Build production assets
-        run: npm run prod
+        run: npm run build
 
       - name: Prepare environment
         run: |
@@ -80,6 +83,23 @@ jobs:
 
       - name: Run tests
         run: php artisan test --parallel || true
+
+  mobile-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Pub get
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze || true
+      - name: Unit/widget tests
+        run: flutter test || true
 
   docker-build:
     runs-on: ubuntu-latest

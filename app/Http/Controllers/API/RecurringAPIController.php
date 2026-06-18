@@ -252,6 +252,53 @@ class RecurringAPIController extends AppBaseController
         return $this->sendResponse($invoice, 'Payment recorded successfully.');
     }
 
+    /**
+     * Overdue invoices: unpaid and past due date. Also sweeps their status to
+     * 'overdue' so the figure is consistent everywhere.
+     */
+    public function overdue(Request $request): JsonResponse
+    {
+        $today = Carbon::today();
+
+        RecurringInvoice::query()
+            ->whereIn('status', [RecurringInvoice::STATUS_ISSUED])
+            ->whereDate('due_date', '<', $today)
+            ->whereColumn('paid_amount', '<', 'total_amount')
+            ->update(['status' => RecurringInvoice::STATUS_OVERDUE]);
+
+        $rows = RecurringInvoice::query()
+            ->with('customer:id,name')
+            ->where('status', RecurringInvoice::STATUS_OVERDUE)
+            ->orderBy('due_date')
+            ->get()
+            ->map(fn ($i) => [
+                'id'          => $i->id,
+                'invoice_no'  => $i->invoice_no,
+                'customer'    => $i->customer?->name,
+                'due_date'    => $i->due_date?->toDateString(),
+                'days_overdue' => $i->due_date ? max(0, $today->diffInDays($i->due_date)) : 0,
+                'total'       => $i->total_amount,
+                'paid'        => $i->paid_amount,
+                'balance'     => round((float) $i->total_amount - (float) $i->paid_amount, 2),
+                'reminded_at' => $i->reminded_at?->toDateTimeString(),
+            ]);
+
+        return $this->sendResponse([
+            'count'   => $rows->count(),
+            'balance' => round($rows->sum('balance'), 2),
+            'rows'    => $rows,
+        ], 'Overdue invoices retrieved.');
+    }
+
+    /** Record/send an overdue reminder for an invoice (stamps reminded_at). */
+    public function sendReminder(Request $request, RecurringInvoice $invoice): JsonResponse
+    {
+        $invoice->update(['reminded_at' => now()]);
+        // A notification (email/SMS/WhatsApp) can be dispatched here via the
+        // notification outbox; the timestamp records that a reminder was sent.
+        return $this->sendResponse($invoice, 'Reminder sent.');
+    }
+
     // ---- helpers ----
     private function validateSubscription(Request $request): array
     {

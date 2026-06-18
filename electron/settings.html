@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Printer settings</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, Segoe UI, Roboto, sans-serif; }
+        body { margin: 0; padding: 20px; background: #0f172a; color: #e2e8f0; }
+        h1 { font-size: 18px; margin: 0 0 16px; }
+        label { display: block; font-size: 13px; margin: 12px 0 6px; color: #cbd5e1; }
+        input, select { width: 100%; padding: 10px 12px; border-radius: 9px; border: 1px solid #334155;
+            background: #0b1220; color: #e2e8f0; font-size: 14px; }
+        .row { display: flex; gap: 10px; }
+        .row > div { flex: 1; }
+        button { margin-top: 18px; padding: 11px 16px; border: 0; border-radius: 10px;
+            background: #6366f1; color: #fff; font-weight: 600; cursor: pointer; }
+        button.alt { background: #334155; }
+        .msg { margin-top: 12px; font-size: 13px; min-height: 18px; }
+        .hint { color: #64748b; font-size: 12px; margin-top: 4px; }
+        .hide { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Printer settings</h1>
+
+    <label>Printer type</label>
+    <select id="type">
+        <option value="system">System printer (USB / installed)</option>
+        <option value="network">Network ESC/POS (IP — supports cash drawer)</option>
+    </select>
+
+    <div id="systemBox">
+        <label>System printer</label>
+        <select id="name"></select>
+        <div class="hint">Prints a rendered receipt to any installed printer.</div>
+    </div>
+
+    <div id="networkBox" class="hide">
+        <label>Printer IP : port</label>
+        <input id="address" placeholder="192.168.0.99:9100" />
+        <div class="row">
+            <div><label>Width (chars)</label><input id="width" type="number" value="48" /></div>
+            <div><label>Charset</label><input id="charset" value="PC852_LATIN2" /></div>
+        </div>
+        <div class="hint">ESC/POS over TCP — enables the cash-drawer kick.</div>
+    </div>
+
+    <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+        <input type="checkbox" id="preview" style="width:auto;" />
+        Preview receipt before printing
+    </label>
+
+    <div style="margin-top:14px;">
+        <button id="save">Save</button>
+        <button id="test" class="alt">Test print</button>
+        <button id="drawer" class="alt">Open drawer</button>
+    </div>
+    <div class="msg" id="msg"></div>
+
+    <script>
+        const $ = (id) => document.getElementById(id);
+        const msg = (t, ok) => { $("msg").textContent = t; $("msg").style.color = ok ? "#86efac" : "#fca5a5"; };
+
+        function toggle() {
+            const net = $("type").value === "network";
+            $("networkBox").classList.toggle("hide", !net);
+            $("systemBox").classList.toggle("hide", net);
+        }
+        $("type").addEventListener("change", toggle);
+
+        async function init() {
+            const printers = await window.noova.getPrinters();
+            $("name").innerHTML = (printers || []).map((p) => `<option value="${p.name}">${p.displayName || p.name}</option>`).join("");
+            const cfg = (await window.noova.getPrinterConfig()) || {};
+            $("type").value = cfg.type || "system";
+            if (cfg.name) $("name").value = cfg.name;
+            $("address").value = cfg.address || "";
+            $("width").value = cfg.width || 48;
+            $("charset").value = cfg.charset || "PC852_LATIN2";
+            $("preview").checked = !!cfg.preview;
+            toggle();
+        }
+
+        function readConfig() {
+            return {
+                type: $("type").value,
+                name: $("name").value,
+                address: $("address").value,
+                width: Number($("width").value) || 48,
+                charset: $("charset").value,
+                preview: $("preview").checked,
+            };
+        }
+
+        $("save").addEventListener("click", async () => {
+            await window.noova.setPrinterConfig(readConfig());
+            msg("Saved.", true);
+        });
+
+        const sampleReceipt = {
+            title: "NoovaPOS", subtitle: "Test Receipt", address: "Your store address",
+            meta: [["Invoice", "TEST-001"], ["Date", new Date().toLocaleString()]],
+            items: [{ name: "Sample item A", qty: 2, price: "100.00", amount: "200.00" },
+                    { name: "Sample item B", qty: 1, price: "50.00", amount: "50.00" }],
+            totals: [["Subtotal", "250.00"], ["Tax", "0.00"], ["Total", "250.00"]],
+            footer: "Thank you!", openDrawer: false,
+        };
+
+        $("test").addEventListener("click", async () => {
+            await window.noova.setPrinterConfig(readConfig());
+            const r = await window.noova.print(sampleReceipt);
+            msg(r && r.ok ? "Printed." : "Print failed: " + ((r && r.error) || "unknown"), r && r.ok);
+        });
+
+        $("drawer").addEventListener("click", async () => {
+            await window.noova.setPrinterConfig(readConfig());
+            const r = await window.noova.openDrawer();
+            msg(r && r.ok ? "Drawer opened." : "Drawer failed: " + ((r && r.error) || "unknown"), r && r.ok);
+        });
+
+        init();
+    </script>
+</body>
+</html>

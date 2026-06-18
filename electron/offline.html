@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>NoovaPOS — Offline</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, Segoe UI, Roboto, sans-serif; }
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(160deg, #1e1b4b, #0f172a); color: #e2e8f0; text-align: center; }
+        .card { max-width: 440px; padding: 32px; }
+        .dot { width: 14px; height: 14px; border-radius: 50%; background: #f59e0b; display: inline-block; margin-right: 8px; }
+        h1 { font-size: 22px; margin: 8px 0; }
+        p { color: #94a3b8; }
+        button { margin-top: 18px; padding: 12px 22px; border: 0; border-radius: 11px;
+            background: #6366f1; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; }
+        .muted { color: #64748b; font-size: 12px; margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div><span class="dot"></span>Can't reach the server</div>
+        <h1>You're offline</h1>
+        <p>NoovaPOS couldn't connect to your store. Sales you make are cached and
+           will sync automatically once the connection returns.</p>
+        <button id="retry">Retry connection</button>
+        <div class="muted">The app retries automatically every few seconds.</div>
+    </div>
+    <script>
+        async function retry() {
+            const url = await window.noova.getServerUrl();
+            if (url) location.href = url;
+        }
+        document.getElementById("retry").addEventListener("click", retry);
+        setInterval(retry, 5000);
+    </script>
+</body>
+</html>

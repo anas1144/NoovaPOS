@@ -749,12 +749,28 @@ const PosMainPage = (props) => {
         document.getElementById("printRegisterDetailsId").click();
     };
 
+    // On the Electron desktop app, print the receipt SILENTLY through the native
+    // bridge (no OS dialog / "no preview") instead of the browser's window.print.
+    const desktopSilentPrint = (iframe) => {
+        try {
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            const html = "<!DOCTYPE html>" + doc.documentElement.outerHTML;
+            return window.noova.printHtml(html);
+        } catch (e) {
+            try { iframe.contentWindow.print(); } catch (_) {}
+            return Promise.resolve();
+        }
+    };
+    const isDesktop = typeof window !== "undefined" && window.noova && window.noova.isDesktop;
+
     const handlePrint = useReactToPrint({
         content: () => componentRef.current,
+        ...(isDesktop ? { print: desktopSilentPrint } : {}),
     });
 
     const handleRegisterDetailsPrint = useReactToPrint({
         content: () => registerDetailsRef.current,
+        ...(isDesktop ? { print: desktopSilentPrint } : {}),
     });
 
     //payment print

@@ -45,6 +45,12 @@ use App\Http\Controllers\API\FbrDiDashboardController;
 use App\Http\Controllers\API\FbrDiLimitController;
 use App\Http\Controllers\API\FbrAgentController;
 use App\Http\Controllers\API\FbrReportController;
+use App\Http\Controllers\API\ProductBatchController;
+use App\Http\Controllers\API\WaterSupplyController;
+use App\Http\Controllers\API\BakeryProductionController;
+use App\Http\Controllers\API\ElectronicsController;
+use App\Http\Controllers\API\DistributionController;
+use App\Http\Controllers\API\AppApiController;
 use App\Http\Controllers\API\PlatformPaymentController;
 use App\Http\Controllers\API\PlatformBankAccountController;
 use App\Http\Controllers\API\PlatformSettingController;
@@ -107,6 +113,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('billing/checkout', [TenantBillingController::class, 'checkout']);
     Route::post('billing/addon-request', [TenantBillingController::class, 'requestAddon']);
     Route::post('billing/fbr-request', [TenantBillingController::class, 'requestFbr']);
+});
+
+// ── App API (v1) — mobile Flutter + Electron desktop ──────────────────────────
+// Auth tokens come from POST /api/login (Sanctum). Offline sales upload uses the
+// existing /api/offline-sync/batches endpoint.
+Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
+    Route::get('me', [AppApiController::class, 'me']);
+    Route::get('sync/bootstrap', [AppApiController::class, 'bootstrap']);
+    Route::post('devices', [AppApiController::class, 'registerDevice']);
+    Route::delete('devices', [AppApiController::class, 'unregisterDevice']);
 });
 
 Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
@@ -493,6 +509,8 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
 
     Route::get('recurring/invoices', [RecurringAPIController::class, 'invoices']);
     Route::post('recurring/invoices/{invoice}/pay', [RecurringAPIController::class, 'payInvoice']);
+    Route::get('recurring/overdue', [RecurringAPIController::class, 'overdue']);
+    Route::post('recurring/invoices/{invoice}/remind', [RecurringAPIController::class, 'sendReminder']);
 
     // Accounting module
     Route::get('accounting/accounts', [AccountingAPIController::class, 'accounts']);
@@ -609,6 +627,49 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
     Route::get('fbr-di/reports/tax', [FbrReportController::class, 'tax']);
     Route::get('fbr-di/reports/sync', [FbrReportController::class, 'sync']);
     Route::get('fbr-di/reports/rejected', [FbrReportController::class, 'rejected']);
+
+    // Pharmacy / perishables — product batches + expiry
+    Route::get('product-batches', [ProductBatchController::class, 'index']);
+    Route::get('product-batches/near-expiry', [ProductBatchController::class, 'nearExpiry']);
+    Route::post('product-batches', [ProductBatchController::class, 'store']);
+    Route::patch('product-batches/{productBatch}', [ProductBatchController::class, 'update']);
+    Route::delete('product-batches/{productBatch}', [ProductBatchController::class, 'destroy']);
+
+    // Water Supply — routes, bottle ledger, deposits
+    Route::get('water/routes', [WaterSupplyController::class, 'routes']);
+    Route::post('water/routes', [WaterSupplyController::class, 'storeRoute']);
+    Route::patch('water/routes/{deliveryRoute}', [WaterSupplyController::class, 'updateRoute']);
+    Route::delete('water/routes/{deliveryRoute}', [WaterSupplyController::class, 'destroyRoute']);
+    Route::get('water/bottles', [WaterSupplyController::class, 'bottles']);
+    Route::post('water/bottles', [WaterSupplyController::class, 'recordBottles']);
+    Route::get('water/bottle-balances', [WaterSupplyController::class, 'bottleBalances']);
+    Route::get('water/deposits', [WaterSupplyController::class, 'deposits']);
+    Route::post('water/deposits', [WaterSupplyController::class, 'storeDeposit']);
+    Route::post('water/deposits/{waterDeposit}/refund', [WaterSupplyController::class, 'refundDeposit']);
+
+    // Bakery — recipes + production runs
+    Route::get('bakery/recipes', [BakeryProductionController::class, 'recipes']);
+    Route::post('bakery/recipes', [BakeryProductionController::class, 'storeRecipe']);
+    Route::patch('bakery/recipes/{recipe}', [BakeryProductionController::class, 'updateRecipe']);
+    Route::delete('bakery/recipes/{recipe}', [BakeryProductionController::class, 'destroyRecipe']);
+    Route::get('bakery/production', [BakeryProductionController::class, 'runs']);
+    Route::post('bakery/production', [BakeryProductionController::class, 'storeRun']);
+
+    // Electronics — serials + warranties
+    Route::get('electronics/serials', [ElectronicsController::class, 'serials']);
+    Route::post('electronics/serials', [ElectronicsController::class, 'storeSerials']);
+    Route::patch('electronics/serials/{productSerial}', [ElectronicsController::class, 'updateSerial']);
+    Route::delete('electronics/serials/{productSerial}', [ElectronicsController::class, 'destroySerial']);
+    Route::get('electronics/warranties', [ElectronicsController::class, 'warranties']);
+    Route::post('electronics/warranties', [ElectronicsController::class, 'registerWarranty']);
+    Route::get('electronics/warranty-lookup', [ElectronicsController::class, 'lookup']);
+
+    // Distribution — van load-out + reconciliation
+    Route::get('distribution/routes', [DistributionController::class, 'routes']);
+    Route::get('distribution/loads', [DistributionController::class, 'loads']);
+    Route::post('distribution/loads', [DistributionController::class, 'storeLoad']);
+    Route::post('distribution/loads/{dispatchLoad}/reconcile', [DistributionController::class, 'reconcile']);
+    Route::delete('distribution/loads/{dispatchLoad}', [DistributionController::class, 'destroyLoad']);
 
     // Attendance reports
     Route::get('attendance/reports/summary', [AttendanceReportController::class, 'summary']);

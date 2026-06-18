@@ -1,0 +1,78 @@
+{
+    "name": "noovapos-desktop",
+    "productName": "NoovaPOS",
+    "version": "1.0.0",
+    "description": "NoovaPOS desktop POS (wraps the web app with native printing, cash drawer and scanner support).",
+    "main": "main.js",
+    "author": "NoovaPOS",
+    "license": "UNLICENSED",
+    "scripts": {
+        "start": "electron .",
+        "dist": "electron-builder",
+        "dist:win": "electron-builder --win",
+        "dist:mac": "electron-builder --mac",
+        "dist:linux": "electron-builder --linux"
+    },
+    "dependencies": {
+        "electron-store": "^8.2.0",
+        "node-thermal-printer": "^4.4.4",
+        "electron-updater": "^6.2.1"
+    },
+    "devDependencies": {
+        "electron": "^31.0.0",
+        "electron-builder": "^24.13.3"
+    },
+    "build": {
+        "appId": "com.noovapos.desktop",
+        "productName": "NoovaPOS",
+        "asar": true,
+        "directories": {
+            "output": "dist",
+            "buildResources": "build"
+        },
+        "files": [
+            "main.js",
+            "preload.js",
+            "preview-preload.js",
+            "printer.js",
+            "setup.html",
+            "settings.html",
+            "offline.html",
+            "preview.html",
+            "assets/**/*"
+        ],
+        "publish": [
+            { "provider": "generic", "url": "https://releases.noovapos.com/desktop/" }
+        ],
+        "win": {
+            "target": [{ "target": "nsis", "arch": ["x64"] }],
+            "icon": "build/icon.ico"
+        },
+        "mac": {
+            "target": ["dmg", "zip"],
+            "category": "public.app-category.business",
+            "icon": "build/icon.icns",
+            "hardenedRuntime": true,
+            "gatekeeperAssess": false,
+            "entitlements": "build/entitlements.mac.plist",
+            "entitlementsInherit": "build/entitlements.mac.plist"
+        },
+        "dmg": {
+            "title": "NoovaPOS ${version}"
+        },
+        "linux": {
+            "target": ["AppImage", "deb"],
+            "category": "Office",
+            "icon": "build/icon.png",
+            "maintainer": "NoovaPOS <support@noovapos.com>"
+        },
+        "nsis": {
+            "oneClick": false,
+            "perMachine": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "NoovaPOS"
+        }
+    }
+}

@@ -156,6 +156,12 @@ import FbrSandbox from "./components/fbrDigital/FbrSandbox";
 import FbrDashboard from "./components/fbrDigital/FbrDashboard";
 import FbrReports from "./components/fbrDigital/FbrReports";
 import PlatformFbrDi from "./components/platform/PlatformFbrDi";
+import PharmacyBatches from "./components/pharmacy/PharmacyBatches";
+import WaterSupply from "./components/water/WaterSupply";
+import BakeryProduction from "./components/bakery/BakeryProduction";
+import Electronics from "./components/electronics/Electronics";
+import Distribution from "./components/distribution/Distribution";
+import OverdueInvoices from "./components/recurring/OverdueInvoices";
 import Pipeline from "./components/crm/Pipeline";
 
 export const route = [
@@ -963,6 +969,36 @@ export const route = [
     {
         path: "platform/fbr-di",
         ele: <PlatformFbrDi />,
+        permission: "",
+    },
+    {
+        path: "pharmacy/batches",
+        ele: <PharmacyBatches />,
+        permission: "",
+    },
+    {
+        path: "water/supply",
+        ele: <WaterSupply />,
+        permission: "",
+    },
+    {
+        path: "bakery/production",
+        ele: <BakeryProduction />,
+        permission: "",
+    },
+    {
+        path: "electronics/manage",
+        ele: <Electronics />,
+        permission: "",
+    },
+    {
+        path: "distribution/loads",
+        ele: <Distribution />,
+        permission: "",
+    },
+    {
+        path: "recurring/overdue",
+        ele: <OverdueInvoices />,
         permission: "",
     },
     {

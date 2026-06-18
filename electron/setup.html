@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NoovaPOS Desktop — Setup</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: system-ui, Segoe UI, Roboto, sans-serif;
+            background: linear-gradient(160deg, #1e1b4b, #0f172a); color: #e2e8f0; }
+        .card { width: 100%; max-width: 460px; background: #111827; border: 1px solid #1f2937;
+            border-radius: 16px; padding: 28px 30px; box-shadow: 0 24px 60px rgba(0,0,0,.45); }
+        h1 { margin: 0 0 4px; font-size: 20px; }
+        p { margin: 0 0 18px; color: #94a3b8; font-size: 14px; }
+        label { display: block; font-size: 13px; margin-bottom: 6px; color: #cbd5e1; }
+        input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #334155;
+            background: #0b1220; color: #e2e8f0; font-size: 15px; }
+        button { width: 100%; margin-top: 18px; padding: 13px; border: 0; border-radius: 11px;
+            background: #6366f1; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; }
+        .err { color: #fca5a5; font-size: 13px; margin-top: 10px; min-height: 18px; }
+        .hint { color: #64748b; font-size: 12px; margin-top: 12px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Connect to your store</h1>
+        <p>Enter the NoovaPOS web address for this tenant.</p>
+        <label for="url">Server URL</label>
+        <input id="url" placeholder="https://yourstore.noovapos.com" autofocus />
+        <div class="err" id="err"></div>
+        <button id="go">Connect</button>
+        <div class="hint">Example: https://abcgroup.noovapos.local — you can change this later from the Server menu.</div>
+    </div>
+    <script>
+        const input = document.getElementById("url");
+        const err = document.getElementById("err");
+        async function connect() {
+            err.textContent = "";
+            const res = await window.noova.setServerUrl(input.value);
+            if (!res || !res.ok) err.textContent = (res && res.error) || "Could not connect.";
+        }
+        document.getElementById("go").addEventListener("click", connect);
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
+    </script>
+</body>
+</html>

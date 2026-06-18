@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Receipt preview</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: system-ui, Segoe UI, Roboto, sans-serif; background: #e5e7eb; }
+        .bar { position: sticky; top: 0; display: flex; gap: 8px; padding: 8px;
+            background: #111827; }
+        .bar button { flex: 1; padding: 9px; border: 0; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .print { background: #6366f1; color: #fff; }
+        .close { background: #374151; color: #e5e7eb; }
+        .paper { margin: 12px auto; width: 300px; background: #fff; padding: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+        iframe { width: 100%; border: 0; min-height: 460px; }
+        .msg { text-align: center; color: #374151; font-size: 12px; padding: 6px; }
+    </style>
+</head>
+<body>
+    <div class="bar">
+        <button class="print" id="print">Print</button>
+        <button class="close" id="close">Close</button>
+    </div>
+    <div class="paper"><iframe id="r"></iframe></div>
+    <div class="msg" id="msg"></div>
+    <script>
+        (async () => {
+            const html = await window.noovaPreview.getHtml();
+            document.getElementById("r").srcdoc = html || "<p>No receipt.</p>";
+        })();
+        document.getElementById("print").addEventListener("click", async () => {
+            document.getElementById("msg").textContent = "Printing…";
+            const r = await window.noovaPreview.print();
+            if (r && !r.ok) document.getElementById("msg").textContent = "Print failed: " + (r.error || "unknown");
+        });
+        document.getElementById("close").addEventListener("click", () => window.noovaPreview.close());
+    </script>
+</body>
+</html>

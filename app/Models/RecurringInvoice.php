@@ -31,6 +31,7 @@ class RecurringInvoice extends BaseModel
         'paid_amount',
         'status',
         'due_date',
+        'reminded_at',
         'invoice_no',
         'line_items',
     ];
@@ -39,6 +40,7 @@ class RecurringInvoice extends BaseModel
         'period_start' => 'date',
         'period_end' => 'date',
         'due_date' => 'date',
+        'reminded_at' => 'datetime',
         'line_items' => 'array',
         'subtotal' => 'decimal:2',
         'tax_amount' => 'decimal:2',

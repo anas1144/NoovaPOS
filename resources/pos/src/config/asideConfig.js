@@ -49,6 +49,10 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
     const isMonthlyService = shopType === "monthly_service";
     const isDistribution   = shopType === "distribution";
     const isFbrDigital     = shopType === "fbr_digital";
+    const isPharmacy       = shopType === "pharmacy";
+    const isBakery         = shopType === "bakery";
+    const isElectronics    = shopType === "electronics";
+    const isFashion        = shopType === "fashion";
 
     const config = [];
 
@@ -535,6 +539,7 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
                 { title: "Recurring Plans",        to: "/app/recurring/plans",         fontIcon: <FontAwesomeIcon icon={faClipboardList} />, class: "d-flex", permission: "" },
                 { title: "Customer Subscriptions", to: "/app/recurring/subscriptions", fontIcon: <FontAwesomeIcon icon={faUser} />,          class: "d-flex", permission: "" },
                 { title: "Delivery Schedule",      to: "/app/recurring/deliveries",    fontIcon: <FontAwesomeIcon icon={faCalendarDays} />,  class: "d-flex", permission: "" },
+                { title: "Overdue & Reminders",    to: "/app/recurring/overdue",       fontIcon: <FontAwesomeIcon icon={faBell} />,          class: "d-flex", permission: "" },
             ],
         });
     }
@@ -565,6 +570,95 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
             to: "/app/crm/pipeline",
             class: "d-flex",
             permission: "",
+        });
+    }
+
+    // ── PHARMACY (batch + expiry tracking) ────────────────────────────
+    if (isPharmacy && canManage) {
+        config.push({ type: "section", label: "Pharmacy" });
+        config.push({
+            title: "Batches & Expiry",
+            name: "pharmacy-batches",
+            fontIcon: <FontAwesomeIcon icon={faBoxOpen} />,
+            to: "/app/pharmacy/batches",
+            class: "d-flex",
+            permission: "",
+        });
+    }
+
+    // ── WATER SUPPLY (routes, bottle ledger, deposits) ────────────────
+    if (isWaterSupply && (canManage || isDelivery)) {
+        config.push({ type: "section", label: "Water Supply" });
+        config.push({
+            title: "Water Supply",
+            name: "water-supply",
+            fontIcon: <FontAwesomeIcon icon={faTruckMoving} />,
+            to: "/app/water/supply",
+            class: "d-flex",
+            permission: "",
+        });
+    }
+
+    // ── BAKERY (recipes + production) ─────────────────────────────────
+    if (isBakery && canManage) {
+        config.push({ type: "section", label: "Bakery" });
+        config.push({
+            title: "Production",
+            name: "bakery-production",
+            fontIcon: <FontAwesomeIcon icon={faBoxes} />,
+            to: "/app/bakery/production",
+            class: "d-flex",
+            permission: "",
+        });
+    }
+
+    // ── ELECTRONICS (serial numbers + warranty) ───────────────────────
+    if (isElectronics && canManage) {
+        config.push({ type: "section", label: "Electronics" });
+        config.push({
+            title: "Serials & Warranty",
+            name: "electronics",
+            fontIcon: <FontAwesomeIcon icon={faShieldHalved} />,
+            to: "/app/electronics/manage",
+            class: "d-flex",
+            permission: "",
+        });
+    }
+
+    // ── DISTRIBUTION (van load-out + reconciliation) ──────────────────
+    if (isDistribution && (canManage || isDelivery)) {
+        config.push({ type: "section", label: "Distribution" });
+        config.push({
+            title: "Van Loads",
+            name: "distribution",
+            fontIcon: <FontAwesomeIcon icon={faTruck} />,
+            to: "/app/distribution/loads",
+            class: "d-flex",
+            permission: "",
+        });
+    }
+
+    // ── FASHION (variations / size-color matrix + per-variant barcode) ─
+    // Uses the existing Variations engine + barcode printing, surfaced for the
+    // fashion shop type.
+    if (isFashion && canManage) {
+        config.push({ type: "section", label: "Fashion" });
+        config.push({
+            title: "Fashion",
+            name: "fashion",
+            fontIcon: <FontAwesomeIcon icon={faRulerHorizontal} />,
+            to: "/app/variations",
+            class: "d-flex",
+            is_submenu: "true",
+            permission: "",
+            subPath: {
+                fashionVariationsSubPath: "/app/variations",
+                fashionBarcodeSubPath:    "/app/print/barcode",
+            },
+            newRoute: [
+                { title: "Variations (size/color)", to: "/app/variations",   fontIcon: <FontAwesomeIcon icon={faRulerHorizontal} />, class: "d-flex", permission: "" },
+                { title: "Print Variant Barcodes",  to: "/app/print/barcode", fontIcon: <FontAwesomeIcon icon={faPrint} />,           class: "d-flex", permission: "" },
+            ],
         });
     }
 
