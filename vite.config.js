@@ -1,45 +1,18 @@
-import { defineConfig, transformWithOxc } from 'vite';
+import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import fs from 'fs';
 
-const posJsxInJs = {
-    name: 'noovapos:pos-jsx-in-js',
-    enforce: 'pre',
-    async load(id) {
-        const cleanId = id.split('?')[0];
-        const normalizedId = cleanId.replace(/\\/g, '/');
-
-        if (
-            cleanId.endsWith('.js') &&
-            normalizedId.includes('/resources/pos/src/') &&
-            fs.existsSync(cleanId)
-        ) {
-            const code = fs.readFileSync(cleanId, 'utf8');
-            const result = await transformWithOxc(code, cleanId, {
-                lang: 'jsx',
-                jsx: {
-                    runtime: 'automatic',
-                },
-            });
-
-            return {
-                code: result.code,
-                map: result.map,
-            };
-        }
-
-        return null;
-    },
-};
-
+// This project keeps JSX inside plenty of `.js` files under resources/pos/src.
+// Stable (esbuild-based) Vite handles that with two settings:
+//   1. plugin-react's default `include` (/\.[tj]sx?$/) already matches `.js`
+//      and runs the Babel `jsx` parser on it -> JSX in .js source compiles.
+//   2. optimizeDeps.esbuildOptions.loader -> the dependency *scanner/pre-bundler*
+//      (which runs before plugin transforms) parses .js as JSX too.
 export default defineConfig({
     plugins: [
-        posJsxInJs,
         laravel({
             input: [
-                // 'resources/js/app.js',
                 'resources/pos/src/index.jsx',
             ],
             refresh: true,
@@ -50,11 +23,9 @@ export default defineConfig({
     css: {
         preprocessorOptions: {
             scss: {
-                // Silence Dart Sass deprecation warnings that come from
-                // node_modules (Bootstrap, Swiper) and legacy project SCSS
-                // using @import, color functions, and variable-exists().
-                // These are warnings only — the CSS output is correct.
-                // Remove once Bootstrap / Swiper ship Sass-modern-compatible versions.
+                // Silence Dart Sass deprecation warnings coming from
+                // node_modules (Bootstrap, Swiper) and legacy project SCSS.
+                // Output is correct; remove once upstream ships modern Sass.
                 silenceDeprecations: [
                     'import',
                     'global-builtin',
@@ -66,11 +37,22 @@ export default defineConfig({
         },
     },
 
-    oxc: {
-        include: /resources[\\/]pos[\\/]src[\\/].*\.[jt]sx?$/,
-        exclude: /node_modules/,
-        jsx: {
-            runtime: 'automatic',
+    // plugin-react defers the actual JSX->JS compile to Vite's built-in
+    // esbuild, which by default only treats .jsx/.tsx as JSX. This project
+    // keeps JSX in hundreds of .js files, so tell esbuild to load .js/.jsx
+    // under resources/pos/src with the JSX loader. (No .ts/.tsx source here.)
+    esbuild: {
+        loader: 'jsx',
+        include: /resources[\\/]pos[\\/]src[\\/].*\.jsx?$/,
+        exclude: [],
+    },
+
+    // Same treatment for the dependency scanner / pre-bundler.
+    optimizeDeps: {
+        esbuildOptions: {
+            loader: {
+                '.js': 'jsx',
+            },
         },
     },
 
@@ -82,14 +64,8 @@ export default defineConfig({
 
     build: {
         outDir: 'public',
-        emptyOutDir: false, // IMPORTANT: because you also copy images
+        emptyOutDir: false, // IMPORTANT: you also copy images into public
         rollupOptions: {
-            moduleTypes: {
-                '.js': 'jsx',
-            },
-            transform: {
-                jsx: 'react-jsx',
-            },
             output: {
                 entryFileNames: 'js/[name].js',
                 chunkFileNames: 'js/chunks/[name].js',
@@ -103,19 +79,10 @@ export default defineConfig({
         },
     },
 
-    optimizeDeps: {
-        rolldownOptions: {
-            moduleTypes: {
-                '.js': 'jsx',
-            },
-        },
-    },
-
     server: {
         host: 'localhost',
         port: 5173,
         strictPort: false,
-        // Allow requests from noovapos.test (Laragon domain)
         cors: true,
         hmr: {
             host: 'localhost',

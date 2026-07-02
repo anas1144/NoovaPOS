@@ -4,6 +4,7 @@ namespace App\Repositories\Criteria;
 
 use App\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Prettus\Repository\Contracts\CriteriaInterface;
 use Prettus\Repository\Contracts\RepositoryInterface;
@@ -33,7 +34,12 @@ class JSONApiIncludeCriteria implements CriteriaInterface
 
         $availableRelations = $baseRepository->getAvailableRelations();
 
-        return QueryBuilder::for($model)
+        // Spatie QueryBuilder v6 types for() as Builder|Relation|string, so a
+        // bare Model instance would be coerced to its JSON string. Normalize to
+        // a query builder first.
+        $subject = $model instanceof Model ? $model->newQuery() : $model;
+
+        return QueryBuilder::for($subject)
             ->allowedIncludes($availableRelations)
             ->getEloquentBuilder();
     }

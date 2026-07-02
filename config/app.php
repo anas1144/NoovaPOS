@@ -176,9 +176,16 @@ return [
         App\Providers\AuthServiceProvider::class,
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
-        App\Providers\HorizonServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-    ])->toArray(),
+    ])->merge(
+        // Horizon is an optional queue-monitoring dependency. Only register
+        // its provider when the package is actually installed, so a checkout
+        // without laravel/horizon still boots instead of fatally erroring on
+        // a missing class.
+        class_exists(\Laravel\Horizon\Horizon::class)
+            ? [App\Providers\HorizonServiceProvider::class]
+            : []
+    )->toArray(),
 
     /*
     |--------------------------------------------------------------------------

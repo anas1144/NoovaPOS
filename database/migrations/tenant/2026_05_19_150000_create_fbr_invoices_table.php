@@ -33,7 +33,7 @@ return new class extends Migration
             $table->timestamp('failed_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            // FK to central 'tenants' table removed: tenants lives in the central DB, not the per-tenant DB.
             $table->foreign('fbr_profile_id')->references('id')->on('fbr_profiles')->onDelete('cascade');
             $table->index(['tenant_id', 'status']);
             $table->index(['sale_id']);

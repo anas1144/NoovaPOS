@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
 use App\Models\CmsPage;
+use App\Models\Plan;
 use Illuminate\Http\Request;
 
 /**
@@ -30,9 +31,23 @@ class WebCmsController extends Controller
         $country = $request->get('country') ?: $request->cookie('visitor_country');
         $sections = $page->sections->filter(fn ($s) => $s->isVisibleFor($country))->values();
 
+        // Show the plan(s) available for this business type. Guard against the
+        // shop_type column not yet existing (migration not run) so the page
+        // never 500s — it just shows no plans until migrated.
+        $plans = collect();
+        if ($page->type === 'shop_type' && $page->shop_type
+            && \Illuminate\Support\Facades\Schema::hasColumn('plans', 'shop_type')) {
+            $plans = Plan::query()
+                ->where('shop_type', $page->shop_type)
+                ->where('status', true)
+                ->orderBy('price')
+                ->get();
+        }
+
         return view('cms.page', [
             'page'     => $page,
             'sections' => $sections,
+            'plans'    => $plans,
             'menu'     => $this->menu(),
         ]);
     }

@@ -66,7 +66,7 @@ const AsideMenu = (props) => {
     };
 
     const handleStore = (store) => {
-        dispatch(changeStore(store.id, { tenant_id: store?.attributes?.tenant_id, name: store?.attributes?.name }, setSelectedStore, navigate));
+        dispatch(changeStore(store.id, { tenant_id: store?.attributes?.tenant_id, name: store?.attributes?.name, shop_type: store?.attributes?.shop_type }, setSelectedStore, navigate));
     }
 
     // search-bar handling

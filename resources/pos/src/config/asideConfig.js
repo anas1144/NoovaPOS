@@ -186,6 +186,42 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
         return config;
     }
 
+    // ─────────────────────────────────────────────────────────────────
+    // FBR DIGITAL INVOICE shop type — dedicated FBR invoicing, NO POS billing.
+    // These stores get ONLY the FBR Invoicing module (its submenu already
+    // covers dashboard, invoices, products, businesses, reports, etc.).
+    // ─────────────────────────────────────────────────────────────────
+    if (isFbrDigital) {
+        config.push({ type: "section", label: "FBR Digital Invoice" });
+        config.push({
+            title: "FBR Invoicing",
+            name: "fbr-di",
+            fontIcon: <FontAwesomeIcon icon={faFileShield} />,
+            to: "/app/fbr-di/dashboard",
+            class: "d-flex",
+            is_submenu: "true",
+            permission: "fbr_invoice_view",
+            subPath: {
+                fbrDiDashboardSubPath:  "/app/fbr-di/dashboard",
+                fbrDiInvoicesSubPath:   "/app/fbr-di/invoices",
+                fbrDiProductsSubPath:   "/app/fbr-di/products",
+                fbrDiBusinessesSubPath: "/app/fbr-di/businesses",
+                fbrDiErrorsSubPath:     "/app/fbr-di/errors",
+                fbrDiSandboxSubPath:    "/app/fbr-di/sandbox",
+            },
+            newRoute: [
+                { title: "Dashboard",  to: "/app/fbr-di/dashboard",  fontIcon: <FontAwesomeIcon icon={faPieChart} />,   class: "d-flex", permission: "fbr_invoice_view" },
+                { title: "Invoices",   to: "/app/fbr-di/invoices",   fontIcon: <FontAwesomeIcon icon={faReceipt} />,    class: "d-flex", permission: "fbr_invoice_view" },
+                { title: "Products",   to: "/app/fbr-di/products",   fontIcon: <FontAwesomeIcon icon={faBasketShopping} />, class: "d-flex", permission: "fbr_invoice_view" },
+                { title: "Businesses", to: "/app/fbr-di/businesses", fontIcon: <FontAwesomeIcon icon={faBuilding} />,   class: "d-flex", permission: "fbr_business_manage" },
+                { title: "Reports",    to: "/app/fbr-di/reports",    fontIcon: <FontAwesomeIcon icon={faChartColumn} />, class: "d-flex", permission: "fbr_invoice_reports" },
+                { title: "Error Center", to: "/app/fbr-di/errors",   fontIcon: <FontAwesomeIcon icon={faFileShield} />, class: "d-flex", permission: "fbr_invoice_errors" },
+                { title: "Sandbox Testing", to: "/app/fbr-di/sandbox", fontIcon: <FontAwesomeIcon icon={faServer} />,   class: "d-flex", permission: "fbr_invoice_testing" },
+            ],
+        });
+        return config;
+    }
+
     // ── MAIN ─────────────────────────────────────────────────────────
     config.push({ type: "section", label: "Main" });
 
@@ -277,15 +313,7 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
             class: "d-flex",
             permission: Permissions.MANAGE_TRANSFERS,
         });
-
-        config.push({
-            title: "Deals / Combos",
-            name: "deals",
-            fontIcon: <FontAwesomeIcon icon={faBasketShopping} />,
-            to: "/app/deals",
-            class: "d-flex",
-            permission: "",
-        });
+        // Deals/Combos moved to the Restaurant section (restaurant-only).
     }
 
     // ── SALES ────────────────────────────────────────────────────────
@@ -324,14 +352,7 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
         permission: Permissions.MANAGE_POS_SCREEN,
     });
 
-    config.push({
-        title: "Deliveries",
-        name: "deliveries",
-        fontIcon: <FontAwesomeIcon icon={faTruckMoving} />,
-        to: "/app/deliveries",
-        class: "d-flex",
-        permission: "",
-    });
+    // Deliveries moved to the Restaurant section (restaurant-only).
 
     config.push({
         title: "Customer Orders",
@@ -508,12 +529,16 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
                 restaurantTablesSubPath:   "/app/restaurant/tables",
                 restaurantKitchensSubPath: "/app/restaurant/kitchens",
                 restaurantKotsSubPath:     "/app/restaurant/kots",
+                restaurantDealsSubPath:      "/app/deals",
+                restaurantDeliveriesSubPath: "/app/deliveries",
             },
             newRoute: [
                 { title: "Halls",         to: "/app/restaurant/halls",    fontIcon: <FontAwesomeIcon icon={faBuilding} />,   class: "d-flex", permission: "" },
                 { title: "Tables",        to: "/app/restaurant/tables",   fontIcon: <FontAwesomeIcon icon={faChair} />,      class: "d-flex", permission: "" },
                 { title: "Kitchens",      to: "/app/restaurant/kitchens", fontIcon: <FontAwesomeIcon icon={faKitchenSet} />, class: "d-flex", permission: "" },
                 { title: "Kitchen Display", to: "/app/restaurant/kots",   fontIcon: <FontAwesomeIcon icon={faKitchenSet} />, class: "d-flex", permission: "" },
+                { title: "Deals / Combos", to: "/app/deals",       fontIcon: <FontAwesomeIcon icon={faBasketShopping} />, class: "d-flex", permission: "" },
+                { title: "Deliveries",     to: "/app/deliveries",  fontIcon: <FontAwesomeIcon icon={faTruckMoving} />,    class: "d-flex", permission: "" },
             ],
         });
     }
@@ -663,7 +688,9 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
     }
 
     // ── FBR DIGITAL INVOICE (dedicated shop type — no POS billing) ────
-    if (isFbrDigital || hasPerm("fbr_invoice_view")) {
+    // Show only for fbr_digital stores (matches how Restaurant is gated to
+    // restaurant stores), and only when the user can view FBR invoices.
+    if (isFbrDigital && hasPerm("fbr_invoice_view")) {
         config.push({ type: "section", label: "FBR Digital Invoice" });
 
         config.push({
@@ -677,6 +704,7 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
             subPath: {
                 fbrDiDashboardSubPath:  "/app/fbr-di/dashboard",
                 fbrDiInvoicesSubPath:   "/app/fbr-di/invoices",
+                fbrDiProductsSubPath:   "/app/fbr-di/products",
                 fbrDiBusinessesSubPath: "/app/fbr-di/businesses",
                 fbrDiErrorsSubPath:     "/app/fbr-di/errors",
                 fbrDiSandboxSubPath:    "/app/fbr-di/sandbox",
@@ -684,6 +712,7 @@ export const buildAsideConfig = (shopType = "retail", userRoles = [], permission
             newRoute: [
                 { title: "Dashboard",  to: "/app/fbr-di/dashboard",  fontIcon: <FontAwesomeIcon icon={faPieChart} />,   class: "d-flex", permission: "fbr_invoice_view" },
                 { title: "Invoices",   to: "/app/fbr-di/invoices",   fontIcon: <FontAwesomeIcon icon={faReceipt} />,    class: "d-flex", permission: "fbr_invoice_view" },
+                { title: "Products",   to: "/app/fbr-di/products",   fontIcon: <FontAwesomeIcon icon={faBasketShopping} />, class: "d-flex", permission: "fbr_invoice_view" },
                 { title: "Businesses", to: "/app/fbr-di/businesses", fontIcon: <FontAwesomeIcon icon={faBuilding} />,   class: "d-flex", permission: "fbr_business_manage" },
                 { title: "Reports",    to: "/app/fbr-di/reports",    fontIcon: <FontAwesomeIcon icon={faChartColumn} />, class: "d-flex", permission: "fbr_invoice_reports" },
                 { title: "Error Center", to: "/app/fbr-di/errors",   fontIcon: <FontAwesomeIcon icon={faFileShield} />, class: "d-flex", permission: "fbr_invoice_errors" },

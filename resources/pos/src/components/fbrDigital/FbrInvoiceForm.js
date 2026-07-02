@@ -21,6 +21,7 @@ const FbrInvoiceForm = () => {
     const readOnly = !!id && !isEdit; // /invoices/:id (view)
 
     const [businesses, setBusinesses] = useState([]);
+    const [products, setProducts] = useState([]);
     const [saving, setSaving] = useState(false);
     const [head, setHead] = useState({
         fbr_business_id: "", invoice_date: today(), invoice_type: "sale", ref_inv_no: "",
@@ -34,7 +35,22 @@ const FbrInvoiceForm = () => {
 
     useEffect(() => {
         apiConfig.get(apiBaseURL.FBR_DI_BUSINESSES).then((r) => setBusinesses(r.data?.data || [])).catch(() => {});
+        apiConfig.get(apiBaseURL.FBR_DI_PRODUCTS, { params: { status: 1 } }).then((r) => setProducts(r.data?.data || [])).catch(() => {});
     }, []);
+
+    // Selecting a saved product auto-fills the line (free text still editable).
+    const fillFromProduct = (i, productId) => {
+        const p = products.find((x) => String(x.id) === String(productId));
+        if (!p) return;
+        setItems((rows) => rows.map((r, idx) => idx === i ? {
+            ...r,
+            description: p.name || r.description,
+            hs_code: p.hs_code || r.hs_code,
+            uom: p.uom || r.uom,
+            rate_per_unit: p.rate_per_unit != null ? String(p.rate_per_unit) : r.rate_per_unit,
+            rate_of_sales_tax: p.rate_of_sales_tax != null ? String(p.rate_of_sales_tax) : r.rate_of_sales_tax,
+        } : r));
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -144,11 +160,19 @@ const FbrInvoiceForm = () => {
                 <div className="card-body table-responsive">
                     <table className="table align-middle">
                         <thead><tr>
-                            <th>HS code</th><th>Description</th><th>UoM</th><th>Rate</th><th>Qty</th><th>Excl. tax</th><th>Tax %</th><th>Sales tax</th><th>Incl. tax</th>{!readOnly && <th></th>}
+                            {!readOnly && <th>Product</th>}<th>HS code</th><th>Description</th><th>UoM</th><th>Rate</th><th>Qty</th><th>Excl. tax</th><th>Tax %</th><th>Sales tax</th><th>Incl. tax</th>{!readOnly && <th></th>}
                         </tr></thead>
                         <tbody>
                             {items.map((it, i) => { const c = lineCalc(it); return (
                                 <tr key={i}>
+                                    {!readOnly && (
+                                        <td>
+                                            <select className="form-control form-control-sm" style={{ width: 150 }} value="" onChange={(e) => fillFromProduct(i, e.target.value)}>
+                                                <option value="">— pick —</option>
+                                                {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                            </select>
+                                        </td>
+                                    )}
                                     <td><input className="form-control form-control-sm" style={{ width: 110 }} value={it.hs_code} onChange={setItem(i, "hs_code")} disabled={readOnly} /></td>
                                     <td><input className="form-control form-control-sm" value={it.description} onChange={setItem(i, "description")} disabled={readOnly} /></td>
                                     <td><input className="form-control form-control-sm" style={{ width: 80 }} value={it.uom} onChange={setItem(i, "uom")} disabled={readOnly} /></td>

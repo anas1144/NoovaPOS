@@ -1,10 +1,11 @@
 import apiConfig from "../../config/apiConfig";
-import { apiBaseURL, storeActionType, toastType } from "../../constants";
+import { apiBaseURL, authActionType, storeActionType, toastType } from "../../constants";
 import { getFormattedMessage } from "../../shared/sharedMethod";
 import { setLoading } from "./loadingAction";
 import { addToast } from "./toastAction";
 import { removeFromTotalRecord } from "./totalRecordAction";
 import { fetchFrontSetting } from "./frontSettingAction";
+import { fetchConfig } from "./configAction";
 import { callFetchDataApi } from "./updateBrand";
 
 export const fetchStore =
@@ -115,11 +116,22 @@ export const deleteStore = (storeId) => async (dispatch) => {
 };
 
 export const changeStore =
-    (storeId, store, setSelectedStore, navigate) => async (dispatch) => {
+    (storeId, store, setSelectedStore, navigate) => async (dispatch, getState) => {
         await apiConfig
             .post(apiBaseURL.CHANGE_STORES + "/" + storeId, store)
             .then((response) => {
                 setSelectedStore(store);
+
+                // Update the active shop type on the logged-in user so the
+                // sidebar (gated by loginUser.shop_type) reflects the new
+                // store's business type immediately.
+                const current = getState().loginUser || {};
+                const newShopType = store?.shop_type ?? current.shop_type;
+                dispatch({
+                    type: authActionType.LOGIN_USER,
+                    payload: { ...current, shop_type: newShopType },
+                });
+
                 dispatch(
                     addToast({
                         text: getFormattedMessage("store.changed.message"),
@@ -127,6 +139,7 @@ export const changeStore =
                 );
                 navigate('/app/dashboard');
                 dispatch(fetchFrontSetting())
+                dispatch(fetchConfig())   // refresh allConfigData.store_name so the tab title reflects the new store
                 dispatch(fetchStore());
             })
             .catch(({ response }) => {

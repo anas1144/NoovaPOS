@@ -27,7 +27,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            // FK to central 'tenants' table removed: tenants lives in the central DB, not the per-tenant DB.
             $table->foreign('assigned_to')->references('id')->on('users')->onDelete('set null');
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('set null');
             $table->index(['tenant_id', 'stage']);

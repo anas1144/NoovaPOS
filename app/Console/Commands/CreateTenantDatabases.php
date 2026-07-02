@@ -8,28 +8,50 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Ensures every existing tenant has its own physical database and runs the
- * tenant migration set into it.
+ * Ensures every tenant that is flagged to run on its OWN database
+ * (uses_separate_db = true) has a physical database, and runs the tenant
+ * migration set into it.
  *
- * The TenantCreated job pipeline only provisions a database for tenants created
- * AFTER it was enabled. Tenants that already existed (e.g. the demo tenant)
- * never got a database — this command backfills them.
+ * Tenants WITHOUT the flag intentionally stay on the central database, so they
+ * are skipped here — they don't need (and shouldn't get) a separate database.
  *
- *   php artisan tenancy:create-databases            # create missing DBs + migrate
+ *   php artisan tenancy:create-databases            # create missing DBs + migrate (flagged tenants)
  *   php artisan tenancy:create-databases --fresh    # drop & recreate (DESTRUCTIVE)
+ *   php artisan tenancy:create-databases --all       # include tenants not flagged (rarely needed)
  */
 class CreateTenantDatabases extends Command
 {
-    protected $signature = 'tenancy:create-databases {--fresh : Drop and recreate each tenant database (destructive)}';
+    protected $signature = 'tenancy:create-databases
+        {--fresh : Drop and recreate each tenant database (destructive)}
+        {--all : Provision every tenant, not just those flagged uses_separate_db}';
 
-    protected $description = 'Create (and migrate) a database for every existing tenant.';
+    protected $description = 'Create (and migrate) a database for each separate-DB tenant.';
 
     public function handle(): int
     {
-        $tenants = MultiTenant::all();
+        $all = MultiTenant::all();
+
+        if ($all->isEmpty()) {
+            $this->warn('No tenants found.');
+            return self::SUCCESS;
+        }
+
+        // Diagnostics: show every tenant and whether it uses a separate DB.
+        $this->line('Tenants and their Separate-DB flag:');
+        foreach ($all as $t) {
+            $flag = $t->uses_separate_db ? '<info>separate-db</info>' : 'central';
+            $this->line("  - {$t->id}  [{$flag}]");
+        }
+        $this->newLine();
+
+        $tenants = $this->option('all')
+            ? $all
+            : $all->filter(fn ($t) => (bool) $t->uses_separate_db)->values();
 
         if ($tenants->isEmpty()) {
-            $this->warn('No tenants found.');
+            $this->warn('No tenants have Separate DB enabled (uses_separate_db = true).');
+            $this->line('Enable it on Platform → Tenants for the tenant you want isolated, then re-run.');
+            $this->line('(Or pass --all to provision every tenant regardless of the flag.)');
             return self::SUCCESS;
         }
 
@@ -56,12 +78,51 @@ class CreateTenantDatabases extends Command
         }
 
         $this->newLine();
-        $this->info('Running tenant migrations into each tenant database…');
-        Artisan::call('tenants:migrate', ['--force' => true], $this->getOutput());
+        $this->info('Running tenant migrations into each separate-DB tenant…');
+
+        foreach ($tenants as $tenant) {
+            $this->line("Tenant: {$tenant->id}");
+            self::migrateTenantDatabase($tenant, $this->getOutput());
+        }
 
         $this->newLine();
-        $this->info('Done. Check phpMyAdmin — you should now see the noovapos_tenant_* databases.');
+        $this->info('Done. Check phpMyAdmin — the noovapos_tenant_* databases should now have tables.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Migrate the tenant migration set directly into the tenant's own database.
+     *
+     * We do NOT rely on stancl's runtime connection-switch here: we register a
+     * throwaway connection pointed straight at the tenant database and run the
+     * standard migrate command against it. This guarantees the migrations land
+     * in the tenant DB regardless of bootstrapper/listener timing.
+     */
+    public static function migrateTenantDatabase(MultiTenant $tenant, $output = null): void
+    {
+        $centralName = config('tenancy.database.central_connection') ?: config('database.default');
+        $base = config("database.connections.{$centralName}");
+        $connection = 'tenant_provision';
+
+        config(["database.connections.{$connection}" => array_merge($base, [
+            'database' => $tenant->database()->getName(),
+        ])]);
+
+        DB::purge($connection);
+
+        $params = [
+            '--database' => $connection,
+            '--path'     => 'database/migrations/tenant',
+            '--force'    => true,
+        ];
+
+        if ($output) {
+            Artisan::call('migrate', $params, $output);
+        } else {
+            Artisan::call('migrate', $params);
+        }
+
+        DB::purge($connection);
     }
 }

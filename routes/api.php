@@ -43,6 +43,7 @@ use App\Http\Controllers\API\FbrErrorController;
 use App\Http\Controllers\API\FbrSandboxController;
 use App\Http\Controllers\API\FbrDiDashboardController;
 use App\Http\Controllers\API\FbrDiLimitController;
+use App\Http\Controllers\API\FbrDiProductController;
 use App\Http\Controllers\API\FbrAgentController;
 use App\Http\Controllers\API\FbrReportController;
 use App\Http\Controllers\API\ProductBatchController;
@@ -608,6 +609,14 @@ Route::middleware(['auth:sanctum', 'tenant.active'])->group(function () {
     Route::get('fbr-di/businesses/{fbrBusiness}', [FbrBusinessController::class, 'show']);
     Route::patch('fbr-di/businesses/{fbrBusiness}', [FbrBusinessController::class, 'update']);
     Route::delete('fbr-di/businesses/{fbrBusiness}', [FbrBusinessController::class, 'destroy']);
+
+    // FBR DI product/item catalog + FBR HS-code lookup
+    Route::get('fbr-di/hs-codes', [FbrDiProductController::class, 'hsCodes']);
+    Route::get('fbr-di/products', [FbrDiProductController::class, 'index']);
+    Route::post('fbr-di/products', [FbrDiProductController::class, 'store']);
+    Route::get('fbr-di/products/{fbrDiProduct}', [FbrDiProductController::class, 'show']);
+    Route::patch('fbr-di/products/{fbrDiProduct}', [FbrDiProductController::class, 'update']);
+    Route::delete('fbr-di/products/{fbrDiProduct}', [FbrDiProductController::class, 'destroy']);
 
     Route::get('fbr-di/invoices', [FbrDiInvoiceController::class, 'index']);
     Route::post('fbr-di/invoices', [FbrDiInvoiceController::class, 'store']);

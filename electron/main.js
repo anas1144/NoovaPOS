@@ -34,13 +34,22 @@ let pendingReceiptHtml = "";
 function silentPrintHtml(html) {
     const cfg = store.get("printer") || {};
     return new Promise((resolve) => {
+        let done = false;
+        const finish = (res) => { if (!done) { done = true; resolve(res); } };
         const w = new BrowserWindow({ show: false, webPreferences: { offscreen: false } });
-        w.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(String(html || "")));
+        // Never hang — if printing throws or the spooler is down, report it.
+        const guard = setTimeout(() => { try { w.close(); } catch (e) {} finish({ ok: false, error: "Print timed out (is the Windows Print Spooler running?)" }); }, 20000);
         w.webContents.once("did-finish-load", () => {
-            w.webContents.print(
-                { silent: true, deviceName: cfg.name || undefined, margins: { marginType: "none" } },
-                (ok, err) => { w.close(); resolve({ ok, error: ok ? null : err }); }
-            );
+            try {
+                w.webContents.print(
+                    { silent: true, deviceName: cfg.name || undefined, margins: { marginType: "none" } },
+                    (ok, err) => { clearTimeout(guard); try { w.close(); } catch (e) {} finish({ ok, error: ok ? null : (err || "Print failed") }); }
+                );
+            } catch (e) {
+                clearTimeout(guard);
+                try { w.close(); } catch (_) {}
+                finish({ ok: false, error: String(e.message || e) + " — check the Windows Print Spooler service." });
+            }
         });
     });
 }
@@ -56,6 +65,38 @@ function openReceiptPreview(html) {
     previewWindow.setMenuBarVisibility(false);
     previewWindow.loadFile(path.join(__dirname, "preview.html"));
     previewWindow.on("closed", () => { previewWindow = null; });
+}
+
+// JS injected into every frame: replace window.print() with a call to our
+// bridge so it routes to printHtml (silent or preview), instead of the OS dialog.
+const PRINT_OVERRIDE_JS = `
+(function () {
+    if (window.__noovaPrintPatched) return;
+    window.__noovaPrintPatched = true;
+    var orig = window.print ? window.print.bind(window) : null;
+    function bridge() {
+        try { if (window.noova && window.noova.printHtml) return window.noova; } catch (e) {}
+        try { if (window.top && window.top.noova && window.top.noova.printHtml) return window.top.noova; } catch (e) {}
+        return null;
+    }
+    window.print = function () {
+        var n = bridge();
+        try {
+            if (n) { n.printHtml('<!DOCTYPE html>' + document.documentElement.outerHTML); return; }
+        } catch (e) {}
+        if (orig) orig();
+    };
+})();
+`;
+
+/** Inject the print override into the main frame and every sub-frame (iframes). */
+function patchPrintInAllFrames(wc) {
+    try {
+        const frames = (wc && wc.mainFrame && wc.mainFrame.framesInSubtree) || [];
+        for (const f of frames) {
+            try { f.executeJavaScript(PRINT_OVERRIDE_JS, true).catch(() => {}); } catch (e) {}
+        }
+    } catch (e) { /* ignore */ }
 }
 
 /** True if two URLs share the same origin (protocol + host + port). */

@@ -12,6 +12,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Models\UserStore;
 use App\Repositories\StoreRepository;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 
@@ -48,15 +49,12 @@ class StoreAPIController extends AppBaseController
      */
     public function store(CreateStoreRequest $request)
     {
-        // Enforce the plan's store limit (plus any purchased add-ons).
-        app(\App\Services\TenantSubscriptionService::class)
-            ->assertWithinLimit(Auth::user()->tenant_id, 'stores');
-
-        $input = $request->all();
-
-        $store = $this->storeRepository->store($input);
-
-        return new StoreResource($store);
+        // Stores are not created manually. Each store is provisioned by
+        // subscribing to a plan for its shop type (one plan → one store).
+        // This keeps store count tied to active subscriptions/billing.
+        throw new UnprocessableEntityHttpException(
+            'Stores are created by subscribing to a plan. Go to Billing to add a plan for the business type you need.'
+        );
     }
 
     /**

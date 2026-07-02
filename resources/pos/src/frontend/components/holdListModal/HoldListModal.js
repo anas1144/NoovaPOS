@@ -71,7 +71,6 @@ function HoldListModal ( props ) {
                     stock_alert: items.product.stock_alert,
                     product_id: items.product_id,
                     product_cost: Number( items.product.product_cost ),
-                    product_price: Number( items.product.product_price ),
                     net_unit_cost: Number( items.product.product_price ),
                     tax_type: Number(items.tax_type),
                     product_price: items.product.product_price,

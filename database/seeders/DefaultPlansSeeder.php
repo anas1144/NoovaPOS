@@ -3,20 +3,15 @@
 namespace Database\Seeders;
 
 use App\Models\Plan;
+use App\Models\Subscription;
 use Illuminate\Database\Seeder;
 
 /**
- * Plans architecture:
+ * Plans = one per shop type. A tenant subscribes to one (or several — one per
+ * shop type) and each subscription auto-provisions a store of that type.
  *
- * - All prices in USD by default; PKR prices for Pakistan.
- * - NO unlimited limits — every plan has hard caps.
- * - Default plan: 1 store per tenant, multiple shops.
- * - Shops are priced per-unit ($10 USD / Rs.2,800 PKR base per shop).
- * - Shop-type surcharges apply on top of base per-shop price.
- *   e.g. restaurant shop = base $10 + $5 surcharge = $15/shop
- * - Volume discounts: more shops = lower per-shop price.
- * - Custom plan = "Contact Sales" — no self-serve subscription.
- * - Super admin builds per-tenant custom plans with auto-calculated pricing.
+ * Pricing: base per-shop price + the type's surcharge, in USD (global) and PKR
+ * (Pakistan), monthly and yearly (~2 months free on yearly).
  */
 class DefaultPlansSeeder extends Seeder
 {
@@ -48,244 +43,57 @@ class DefaultPlansSeeder extends Seeder
         'custom'          => 1400,
     ];
 
-    // Volume discount tiers (USD): min-shop-count => per-shop price
-    const VOLUME_USD = [
-        1  => 10.00,
-        3  => 8.00,
-        6  => 6.50,
-        11 => 5.00,
-    ];
-
-    // Volume discount tiers (PKR)
-    const VOLUME_PKR = [
-        1  => 2800,
-        3  => 2240,
-        6  => 1820,
-        11 => 1400,
-    ];
-
     public function run(): void
     {
-        $plans = [
+        // ── ONE PLAN PER SHOP TYPE ───────────────────────────────────────
+        $sort = 1;
+        $keepSlugs = [];
+        foreach (Plan::SHOP_TYPES as $key => $label) {
+            $slug = 'type-' . str_replace('_', '-', $key);
+            $keepSlugs[] = $slug;
 
-            // ── STARTER ─────────────────────────────────────────────────
-            [
-                'name'                  => 'Starter',
-                'slug'                  => 'starter',
-                'description'           => 'Perfect for small businesses. 1 branch, up to 3 shops, 5 users. Includes POS, stock, and basic reports.',
-                'price'                 => 20.00,
-                'currency'              => 'USD',
-                'price_pkr'             => 5600.00,
-                'price_yearly'          => 192.00,
-                'price_yearly_pkr'      => 53760.00,
-                'billing_cycle'         => 'monthly',
-                'trial_days'            => 14,
-                'max_stores'            => 1,
-                'max_shops'             => 3,
-                'max_registers'         => 31,
-                'max_users'             => 5,
-                'max_products'          => 1000,
-                'per_shop_price'        => 10.00,
-                'per_shop_price_pkr'    => 2800.00,
-                'shop_type_pricing'     => self::SHOP_SURCHARGES_USD,
-                'shop_type_pricing_pkr' => self::SHOP_SURCHARGES_PKR,
-                'volume_pricing'        => self::VOLUME_USD,
-                'volume_pricing_pkr'    => self::VOLUME_PKR,
-                'features'              => ['pos', 'stock', 'basic_reports', 'barcode', 'customers', 'suppliers'],
-                'status'                => true,
-                'is_custom'             => false,
-                'is_contact_sales'      => false,
-                'is_featured'           => false,
-                'sort_order'            => 1,
-                'allowed_countries'     => null,
-            ],
+            $usd = 10 + (self::SHOP_SURCHARGES_USD[$key] ?? 0);
+            $pkr = 2800 + (self::SHOP_SURCHARGES_PKR[$key] ?? 0);
+            $modules = Plan::SHOP_TYPE_MODULES[$key] ?? ['pos', 'sales', 'reports'];
 
-            // ── GROWTH ──────────────────────────────────────────────────
-            [
-                'name'                  => 'Growth',
-                'slug'                  => 'growth',
-                'description'           => 'For growing businesses with multiple branches. Up to 3 stores, 10 shops, 25 users. Includes transfers, advanced reports, and offline sync.',
-                'price'                 => 49.00,
-                'currency'              => 'USD',
-                'price_pkr'             => 13720.00,
-                'price_yearly'          => 470.40,
-                'price_yearly_pkr'      => 131712.00,
-                'billing_cycle'         => 'monthly',
-                'trial_days'            => 14,
-                'max_stores'            => 3,
-                'max_shops'             => 10,
-                'max_registers'         => 31,
-                'max_users'             => 25,
-                'max_products'          => 10000,
-                'per_shop_price'        => 10.00,
-                'per_shop_price_pkr'    => 2800.00,
-                'shop_type_pricing'     => self::SHOP_SURCHARGES_USD,
-                'shop_type_pricing_pkr' => self::SHOP_SURCHARGES_PKR,
-                'volume_pricing'        => self::VOLUME_USD,
-                'volume_pricing_pkr'    => self::VOLUME_PKR,
-                'features'              => [
-                    'pos', 'stock', 'transfers', 'reports', 'offline_sync',
-                    'barcode', 'customers', 'suppliers', 'purchases',
-                    'quotations', 'adjustments', 'multi_store',
-                ],
-                'status'                => true,
-                'is_custom'             => false,
-                'is_contact_sales'      => false,
-                'is_featured'           => true,
-                'sort_order'            => 2,
-                'allowed_countries'     => null,
-            ],
+            Plan::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'name'                  => $label . ' Plan',
+                    'shop_type'             => $key,
+                    'description'           => 'Subscription for one ' . strtolower($label) . ' store. Includes the modules that business type needs.',
+                    'price'                 => $usd,
+                    'currency'              => 'USD',
+                    'price_pkr'             => $pkr,
+                    'price_yearly'          => $usd * 10,        // ~2 months free
+                    'price_yearly_pkr'      => $pkr * 10,
+                    'billing_cycle'         => 'monthly',
+                    'trial_days'            => 14,
+                    'max_stores'            => 1,
+                    'max_shops'             => 3,
+                    'max_registers'         => 3,
+                    'max_users'             => 5,
+                    'max_products'          => 5000,
+                    'features'              => $modules,
+                    'shop_type_pricing'     => [],
+                    'shop_type_pricing_pkr' => [],
+                    'status'                => true,
+                    'is_custom'             => false,
+                    'is_contact_sales'      => false,
+                    'is_featured'           => $key === 'retail',
+                    'sort_order'            => $sort++,
+                    'allowed_countries'     => null,
+                ]
+            );
+        }
 
-            // ── PROFESSIONAL ─────────────────────────────────────────────
-            [
-                'name'                  => 'Professional',
-                'slug'                  => 'professional',
-                'description'           => 'Full-featured ERP+POS for large operations. Up to 10 stores, 30 shops, 100 users. Includes accounting, FBR, CRM, HRM, and AI insights.',
-                'price'                 => 149.00,
-                'currency'              => 'USD',
-                'price_pkr'             => 41720.00,
-                'price_yearly'          => 1430.40,
-                'price_yearly_pkr'      => 400512.00,
-                'billing_cycle'         => 'monthly',
-                'trial_days'            => 7,
-                'max_stores'            => 10,
-                'max_shops'             => 30,
-                'max_registers'         => 31,
-                'max_users'             => 100,
-                'max_products'          => 100000,
-                'per_shop_price'        => 10.00,
-                'per_shop_price_pkr'    => 2800.00,
-                'shop_type_pricing'     => self::SHOP_SURCHARGES_USD,
-                'shop_type_pricing_pkr' => self::SHOP_SURCHARGES_PKR,
-                'volume_pricing'        => self::VOLUME_USD,
-                'volume_pricing_pkr'    => self::VOLUME_PKR,
-                'features'              => [
-                    'pos', 'stock', 'transfers', 'advanced_reports', 'offline_sync',
-                    'barcode', 'customers', 'suppliers', 'purchases', 'quotations',
-                    'adjustments', 'multi_store', 'accounting', 'fbr',
-                    'crm', 'hrm', 'ai_reports', 'whatsapp', 'api_access',
-                    'priority_support',
-                ],
-                'status'                => true,
-                'is_custom'             => false,
-                'is_contact_sales'      => false,
-                'is_featured'           => false,
-                'sort_order'            => 3,
-                'allowed_countries'     => null,
-            ],
-
-            // ── PAKISTAN STARTER ────────────────────────────────────────
-            [
-                'name'                  => 'Starter (Pakistan)',
-                'slug'                  => 'starter-pk',
-                'description'           => 'Entry plan for Pakistani businesses. Rs.5,600/month. Includes FBR integration, 1 store, 3 shops.',
-                'price'                 => 0.00,
-                'currency'              => 'PKR',
-                'price_pkr'             => 5600.00,
-                'price_yearly'          => 0.00,
-                'price_yearly_pkr'      => 53760.00,
-                'billing_cycle'         => 'monthly',
-                'trial_days'            => 14,
-                'max_stores'            => 1,
-                'max_shops'             => 3,
-                'max_registers'         => 31,
-                'max_users'             => 5,
-                'max_products'          => 1000,
-                'per_shop_price'        => 0.00,
-                'per_shop_price_pkr'    => 2800.00,
-                'shop_type_pricing'     => [],
-                'shop_type_pricing_pkr' => self::SHOP_SURCHARGES_PKR,
-                'volume_pricing'        => [],
-                'volume_pricing_pkr'    => self::VOLUME_PKR,
-                'features'              => ['pos', 'stock', 'basic_reports', 'barcode', 'customers', 'suppliers', 'fbr'],
-                'status'                => true,
-                'is_custom'             => false,
-                'is_contact_sales'      => false,
-                'is_featured'           => false,
-                'sort_order'            => 4,
-                'allowed_countries'     => ['PK'],
-            ],
-
-            // ── PAKISTAN GROWTH ──────────────────────────────────────────
-            [
-                'name'                  => 'Growth (Pakistan)',
-                'slug'                  => 'growth-pk',
-                'description'           => 'Multi-branch POS for Pakistani businesses. Rs.13,720/month. Includes FBR, offline sync, 3 stores, 10 shops.',
-                'price'                 => 0.00,
-                'currency'              => 'PKR',
-                'price_pkr'             => 13720.00,
-                'price_yearly'          => 0.00,
-                'price_yearly_pkr'      => 131712.00,
-                'billing_cycle'         => 'monthly',
-                'trial_days'            => 14,
-                'max_stores'            => 3,
-                'max_shops'             => 10,
-                'max_registers'         => 31,
-                'max_users'             => 25,
-                'max_products'          => 10000,
-                'per_shop_price'        => 0.00,
-                'per_shop_price_pkr'    => 2800.00,
-                'shop_type_pricing'     => [],
-                'shop_type_pricing_pkr' => self::SHOP_SURCHARGES_PKR,
-                'volume_pricing'        => [],
-                'volume_pricing_pkr'    => self::VOLUME_PKR,
-                'features'              => [
-                    'pos', 'stock', 'transfers', 'reports', 'offline_sync',
-                    'barcode', 'customers', 'suppliers', 'purchases',
-                    'quotations', 'adjustments', 'multi_store', 'fbr',
-                ],
-                'status'                => true,
-                'is_custom'             => false,
-                'is_contact_sales'      => false,
-                'is_featured'           => true,
-                'sort_order'            => 5,
-                'allowed_countries'     => ['PK'],
-            ],
-
-            // ── ENTERPRISE (Contact Sales) ───────────────────────────────
-            [
-                'name'                  => 'Enterprise',
-                'slug'                  => 'enterprise',
-                'description'           => 'Tailored plan for large enterprises and chains. Custom store/shop limits, dedicated support, white-labeling, and SLA. Contact our sales team.',
-                'price'                 => 0.00,
-                'currency'              => 'USD',
-                'price_pkr'             => 0.00,
-                'price_yearly'          => 0.00,
-                'price_yearly_pkr'      => 0.00,
-                'billing_cycle'         => 'monthly',
-                'trial_days'            => 0,
-                'max_stores'            => 50,
-                'max_shops'             => 200,
-                'max_registers'         => 31,
-                'max_users'             => 500,
-                'max_products'          => 500000,
-                'offers_separate_db'    => true,
-                'separate_db_price'     => 99.00,
-                'separate_db_max_users' => 1000,
-                'per_shop_price'        => 10.00,
-                'per_shop_price_pkr'    => 2800.00,
-                'shop_type_pricing'     => self::SHOP_SURCHARGES_USD,
-                'shop_type_pricing_pkr' => self::SHOP_SURCHARGES_PKR,
-                'volume_pricing'        => self::VOLUME_USD,
-                'volume_pricing_pkr'    => self::VOLUME_PKR,
-                'features'              => [
-                    'pos', 'stock', 'transfers', 'advanced_reports', 'offline_sync',
-                    'barcode', 'customers', 'suppliers', 'purchases', 'quotations',
-                    'adjustments', 'multi_store', 'accounting', 'fbr',
-                    'crm', 'hrm', 'ai_reports', 'whatsapp', 'api_access',
-                    'white_label', 'dedicated_support', 'sla', 'custom_modules',
-                ],
-                'status'                => true,
-                'is_custom'             => true,
-                'is_contact_sales'      => true,
-                'is_featured'           => false,
-                'sort_order'            => 6,
-                'allowed_countries'     => null,
-            ],
-        ];
-
-        foreach ($plans as $plan) {
-            Plan::updateOrCreate(['slug' => $plan['slug']], $plan);
+        // ── Remove the old generic tier plans (Starter/Growth/…) that are not
+        // per-shop-type, as long as nothing is subscribed to them.
+        $stale = Plan::query()->whereNotIn('slug', $keepSlugs)->get();
+        foreach ($stale as $plan) {
+            if (! Subscription::query()->where('plan_id', $plan->id)->exists()) {
+                $plan->delete();
+            }
         }
     }
 }

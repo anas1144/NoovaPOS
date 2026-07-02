@@ -48,13 +48,13 @@ class ShopAPIController extends AppBaseController
     {
         try {
             DB::beginTransaction();
-            $this->tenantSubscriptionService->assertWithinLimit(currentTenantId(), 'shops');
             $data = $request->validated();
             // Lock the shop's type to its parent store's type.
             $store = Store::find($data['store_id'] ?? null);
-            if ($store) {
-                $data['shop_type'] = $store->shop_type ?: 'retail';
-            }
+            $shopType = $store ? ($store->shop_type ?: 'retail') : 'retail';
+            $data['shop_type'] = $shopType;
+            // Per-shop-type shop limit (from that type's active plan).
+            $this->tenantSubscriptionService->assertWithinLimit(currentTenantId(), 'shops', 1, $shopType);
             $shop = $this->shopRepository->create($data);
             DB::commit();
 

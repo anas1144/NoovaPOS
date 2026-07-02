@@ -138,6 +138,10 @@ class AuthController extends AppBaseController
             'data' => [
                 'token'         => $token,
                 'user'          => $user,
+                // Top-level shop type of the user's active store — the sidebar
+                // (MasterLayout) reads loginUser.shop_type to gate menus by
+                // business type.
+                'shop_type'     => $user->shop_type,
                 'expires_at'    => config('sanctum.expiration'),
                 'permissions'   => $userPermissions,
                 'roles'         => $userRole,

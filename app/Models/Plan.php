@@ -76,6 +76,7 @@ class Plan extends BaseModel
     protected $fillable = [
         'name',
         'slug',
+        'shop_type',
         'description',
         'price',
         'currency',
@@ -131,6 +132,24 @@ class Plan extends BaseModel
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * Shop types this plan includes. Derived from shop_type_pricing keys
+     * (a plan only prices the shop types it offers). When no pricing map is
+     * configured, the plan is treated as allowing every shop type.
+     *
+     * @return array<int, string>
+     */
+    public function allowedShopTypes(): array
+    {
+        $pricing = $this->shop_type_pricing;
+
+        if (is_array($pricing) && ! empty($pricing)) {
+            return array_values(array_intersect(array_keys($pricing), array_keys(self::SHOP_TYPES)));
+        }
+
+        return array_keys(self::SHOP_TYPES);
     }
 
     /**

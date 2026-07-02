@@ -20,6 +20,7 @@ use App\Services\TenantOnboardingService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Stancl\Tenancy\Database\Models\Domain;
 
@@ -245,7 +246,35 @@ class PlatformTenantController extends AppBaseController
             'created_at' => now(),
         ]);
 
-        return $this->sendSuccess('Tenant database mode updated. Provision the database with: php artisan tenancy:create-databases');
+        // When enabling separate DB, provision it immediately: create the
+        // physical database (if missing) and migrate the tenant schema into it,
+        // so the tenant has its tables without a manual CLI step.
+        if ($tenant->uses_separate_db) {
+            try {
+                $name = $tenant->database()->getName();
+                $exists = ! empty(DB::select(
+                    'SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?',
+                    [$name]
+                ));
+
+                if (! $exists) {
+                    $tenant->database()->manager()->createDatabase($tenant);
+                }
+
+                // Migrate the tenant schema directly into its own database
+                // (does not depend on the runtime connection-switch listener).
+                \App\Console\Commands\CreateTenantDatabases::migrateTenantDatabase($tenant);
+
+                return $this->sendSuccess("Separate database enabled and provisioned ({$name}).");
+            } catch (Exception $e) {
+                return $this->sendError(
+                    'Flag saved, but provisioning failed: ' . $e->getMessage() .
+                    ' — run: php artisan tenancy:create-databases'
+                );
+            }
+        }
+
+        return $this->sendSuccess('Tenant set to use the central database. Existing separate database (if any) was left untouched.');
     }
 
     public function changeStatus(Request $request, string $tenantId): JsonResponse

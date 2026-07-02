@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamp('last_seen_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete()->cascadeOnUpdate();
+            // FK to central 'tenants' table removed: tenants lives in the central DB, not the per-tenant DB.
             $table->foreign('store_id')->references('id')->on('stores')->nullOnDelete()->cascadeOnUpdate();
             $table->foreign('shop_id')->references('id')->on('shops')->nullOnDelete()->cascadeOnUpdate();
             $table->unique(['tenant_id', 'device_uuid']);

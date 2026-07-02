@@ -52,6 +52,13 @@ class StoreFeatureController extends AppBaseController
             $map[$f['key']] = (bool) ($f['effective'] ?? false);
         }
 
+        // Expose the active store's business type so the POS UI can gate
+        // shop-type-specific actions (e.g. Add Deal / Send to Kitchen are
+        // restaurant-only) reliably from the server.
+        $map['shop_type'] = $storeId
+            ? (Store::query()->whereKey($storeId)->value('shop_type') ?: 'retail')
+            : 'retail';
+
         return $this->sendResponse($map, 'Active store features retrieved.');
     }
 

@@ -202,7 +202,22 @@ if (!function_exists('getActiveStoreName')) {
     function getActiveStoreName()
     {
         if (Auth::check() && Auth::user()->tenant_id) {
-            $store = Store::where('tenant_id', Auth::user()->tenant_id)->first();
+            $user = Auth::user();
+
+            // Prefer the user's currently active store; fall back to the
+            // tenant's default store, then any store.
+            $store = null;
+            if (! empty($user->active_store_id)) {
+                $store = Store::where('id', $user->active_store_id)
+                    ->where('tenant_id', $user->tenant_id)
+                    ->first();
+            }
+            if (! $store) {
+                $store = Store::where('tenant_id', $user->tenant_id)
+                    ->orderByDesc('is_default')
+                    ->first();
+            }
+
             return $store->name ?? (getSettingValue('store_name') ?? null);
         }
         return getSettingValue('store_name') ?? null;

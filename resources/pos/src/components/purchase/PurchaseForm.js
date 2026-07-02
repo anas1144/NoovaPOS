@@ -237,7 +237,6 @@ const PurchaseForm = ( props ) => {
             grand_total: calculateCartTotalAmount( updateProducts, purchaseValue ),
             received_amount: '',
             paid_amount: '',
-            payment_type: 0,
             notes: prepareData.notes,
             reference_code: '',
             status: prepareData.status_id.value ? prepareData.status_id.value : prepareData.status_id,

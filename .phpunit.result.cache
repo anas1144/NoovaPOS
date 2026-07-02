@@ -1,1 +1,1 @@
-{"version":1,"defects":[],"times":{"Tests\\Unit\\ExampleTest::test_that_true_is_true":0.699,"Tests\\Feature\\ExampleTest::test_example":2.043}}
+{"version":1,"defects":{"Tests\\Feature\\ExampleTest::test_example":3},"times":{"Tests\\Unit\\ExampleTest::test_that_true_is_true":0.341,"Tests\\Feature\\ExampleTest::test_example":2.022,"Tests\\Feature\\ApiSmokeTest::test_login_requires_credentials":2.877,"Tests\\Feature\\ApiSmokeTest::test_me_requires_authentication":0.185,"Tests\\Feature\\ApiSmokeTest::test_billing_overview_requires_authentication":0.075}}

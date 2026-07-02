@@ -37,7 +37,9 @@ Route::get('/register-tenant', function () {
 // Marketing CMS (server-rendered) — must be registered BEFORE the SPA catch-all.
 Route::get('/blog', [\App\Http\Controllers\WebCmsController::class, 'blogList'])->name('cms.blog');
 Route::get('/blog/{slug}', [\App\Http\Controllers\WebCmsController::class, 'blogPost'])->name('cms.blog.post');
-Route::get('/p/{slug}', [\App\Http\Controllers\WebCmsController::class, 'page'])->name('cms.page');
+Route::get('/p/{slug}', [\App\Http\Controllers\WebCmsController::class, 'page'])
+    ->where('slug', '.*')
+    ->name('cms.page');
 
 // Customer self-service kiosk (public, no login) — token identifies the display.
 Route::get('/kiosk/{token}', function (string $token) {

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->boolean('status')->default(true);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onUpdate('cascade')->onDelete('cascade');
+            // FK to central 'tenants' table removed: tenants lives in the central DB, not the per-tenant DB.
             $table->foreign('store_id')->references('id')->on('stores')->onUpdate('cascade')->onDelete('cascade');
             $table->unique(['tenant_id', 'store_id', 'name']);
         });

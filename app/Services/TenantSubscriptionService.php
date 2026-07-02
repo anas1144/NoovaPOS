@@ -34,52 +34,67 @@ class TenantSubscriptionService
             return;
         }
 
-        $subscription = $this->latestSubscription($tenantId);
-        if (!$subscription) {
+        // A tenant may hold several subscriptions (one per shop type). Access is
+        // allowed if at least one is genuinely usable. No subscriptions at all →
+        // don't block (legacy/free tenants).
+        $all = Subscription::query()->where('tenant_id', $tenantId)->get();
+        if ($all->isEmpty()) {
             return;
         }
 
-        if (in_array($subscription->status, [
-            Subscription::STATUS_CANCELED,
-            Subscription::STATUS_SUSPENDED,
-            Subscription::STATUS_EXPIRED,
-        ], true)) {
+        $usable = $all->first(function ($sub) {
+            if (in_array($sub->status, [
+                Subscription::STATUS_CANCELED,
+                Subscription::STATUS_SUSPENDED,
+                Subscription::STATUS_EXPIRED,
+            ], true)) {
+                return false;
+            }
+            if ($sub->ends_at && $sub->ends_at->isPast()) {
+                return false;
+            }
+            if ($sub->status === Subscription::STATUS_TRIALING && $sub->trial_ends_at && $sub->trial_ends_at->isPast()) {
+                return false;
+            }
+            return true;
+        });
+
+        if (! $usable) {
             throw new AccessDeniedHttpException('Tenant subscription is not active.');
-        }
-
-        if ($subscription->ends_at && $subscription->ends_at->isPast()) {
-            throw new AccessDeniedHttpException('Tenant subscription has ended.');
-        }
-
-        if ($subscription->status === Subscription::STATUS_TRIALING && $subscription->trial_ends_at && $subscription->trial_ends_at->isPast()) {
-            throw new AccessDeniedHttpException('Tenant trial has ended.');
         }
     }
 
-    public function assertWithinLimit(?string $tenantId, string $resource, int $increment = 1): void
+    public function assertWithinLimit(?string $tenantId, string $resource, int $increment = 1, ?string $shopType = null): void
     {
         if (!$tenantId) {
             return;
         }
 
-        $subscription = $this->latestSubscription($tenantId);
-        $plan = $subscription?->plan;
-
-        if (!$plan) {
+        // STRICT per-shop-type enforcement for stores/shops: you can only run as
+        // many stores of a type as you have active plans for that type. Creating
+        // a store of a type you have no plan for is blocked (limit 0).
+        if ($shopType !== null && in_array($resource, ['stores', 'shops'], true)) {
+            $limit = $this->aggregateLimitForType($tenantId, $resource, $shopType);
+            if ($limit === null) {
+                return; // no active subscriptions at all (legacy) → unenforced
+            }
+            if ($resource === 'shops') {
+                $limit += $this->extrasFor($tenantId)['shops'] ?? 0;
+            }
+            $current = $this->usageForType($tenantId, $resource, $shopType);
+            if (($current + $increment) > $limit) {
+                $label = ucfirst(str_replace('_', ' ', $shopType));
+                throw new UnprocessableEntityHttpException("No available {$label} plan — subscribe to add another {$label} {$resource}.");
+            }
             return;
         }
 
-        $limit = $this->limitFor($plan, $resource);
+        $limit = $this->aggregateLimit($tenantId, $resource);
         if ($limit === null) {
-            return;
+            return; // no active plan, or an unlimited plan → unenforced
         }
 
-        // Separate-DB plans may grant a different user allowance.
-        if ($resource === 'users') {
-            $limit = $this->effectiveUserLimit($plan, $tenantId) ?? $limit;
-        }
-
-        // Add the tenant's purchased add-on allowance to the plan limit.
+        // Add the tenant's purchased add-on allowance to the combined limit.
         $limit += $this->extrasFor($tenantId)[$resource] ?? 0;
 
         $current = $this->usageFor($tenantId, $resource);
@@ -88,22 +103,99 @@ class TenantSubscriptionService
         }
     }
 
+    /** Combined limit for a resource across active subscriptions of one shop type. */
+    private function aggregateLimitForType(string $tenantId, string $resource, string $shopType): ?int
+    {
+        $subs = $this->activeSubscriptions($tenantId);
+        if ($subs->isEmpty()) {
+            return null; // legacy/unenforced
+        }
+
+        $total = 0;
+        foreach ($subs as $sub) {
+            $type = $sub->shop_type ?: ($sub->plan->shop_type ?? null);
+            if ($type !== $shopType || ! $sub->plan) {
+                continue;
+            }
+            $limit = $this->limitFor($sub->plan, $resource);
+            if ($limit === null) {
+                return null; // unlimited for this type
+            }
+            $total += (int) $limit;
+        }
+
+        return $total; // 0 when the tenant has no plan for this type
+    }
+
+    /** Current usage of a resource scoped to one shop type. */
+    private function usageForType(string $tenantId, string $resource, string $shopType): int
+    {
+        return match ($resource) {
+            'stores' => Store::query()
+                ->where('tenant_id', $tenantId)->where('shop_type', $shopType)->count(),
+            'shops' => Shop::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenantId)->where('shop_type', $shopType)->count(),
+            default => 0,
+        };
+    }
+
+    /**
+     * Combined limit for a resource across ALL of a tenant's active
+     * subscriptions (multi-plan: one per shop type). Returns null when there is
+     * no active plan, or when any active plan is unlimited for that resource.
+     */
+    private function aggregateLimit(string $tenantId, string $resource): ?int
+    {
+        $subs = $this->activeSubscriptions($tenantId);
+        if ($subs->isEmpty()) {
+            return null;
+        }
+
+        $total = 0;
+        $counted = false;
+        foreach ($subs as $sub) {
+            $plan = $sub->plan;
+            if (! $plan) {
+                continue;
+            }
+            $limit = $this->limitFor($plan, $resource);
+            if ($resource === 'users') {
+                $limit = $this->effectiveUserLimit($plan, $tenantId) ?? $limit;
+            }
+            if ($limit === null) {
+                return null; // any unlimited plan makes the whole resource unlimited
+            }
+            $total += (int) $limit;
+            $counted = true;
+        }
+
+        return $counted ? $total : null;
+    }
+
     public function usage(string $tenantId): array
     {
-        $subscription = $this->latestSubscription($tenantId);
-        $plan = $subscription?->plan;
+        $subs = $this->activeSubscriptions($tenantId);
         $extras = $this->extrasFor($tenantId);
 
-        $withExtra = fn ($limit, $key) => $limit === null ? null : $limit + ($extras[$key] ?? 0);
+        $lim = function (string $resource, ?string $extraKey = null) use ($tenantId, $extras) {
+            $l = $this->aggregateLimit($tenantId, $resource);
+            if ($l === null) {
+                return null;
+            }
+            return $l + ($extraKey ? ($extras[$extraKey] ?? 0) : 0);
+        };
 
         return [
-            'subscription' => $subscription,
+            // Representative subscription (kept for backward compatibility) + the
+            // full set so callers can show per-shop-type plans.
+            'subscription'  => $subs->first(),
+            'subscriptions' => $subs->values(),
             'limits' => [
-                'stores' => $plan?->max_stores,
-                'shops' => $withExtra($plan?->max_shops, 'shops'),
-                'registers' => $plan?->max_registers,
-                'users' => $withExtra($this->effectiveUserLimit($plan, $tenantId), 'users'),
-                'products' => $withExtra($plan?->max_products, 'products'),
+                'stores'    => $lim('stores'),
+                'shops'     => $lim('shops', 'shops'),
+                'registers' => $lim('registers'),
+                'users'     => $lim('users', 'users'),
+                'products'  => $lim('products', 'products'),
             ],
             'extras' => $extras,
             'usage' => [
@@ -116,12 +208,20 @@ class TenantSubscriptionService
         ];
     }
 
-    public function createDefaultSubscription(MultiTenant $tenant): ?Subscription
+    public function createDefaultSubscription(MultiTenant $tenant, ?int $planId = null): ?Subscription
     {
-        $plan = Plan::query()
-            ->where('slug', 'starter')
-            ->where('status', true)
-            ->first();
+        // Use the explicitly chosen plan when provided (and active); otherwise
+        // fall back to the default "starter" plan.
+        $plan = $planId
+            ? Plan::query()->where('id', $planId)->where('status', true)->first()
+            : null;
+
+        if (!$plan) {
+            // No plan chosen → default to the Retail per-shop-type plan, else
+            // any active plan.
+            $plan = Plan::query()->where('slug', 'type-retail')->where('status', true)->first()
+                ?: Plan::query()->where('status', true)->orderBy('sort_order')->first();
+        }
 
         if (!$plan) {
             return null;
@@ -132,10 +232,78 @@ class TenantSubscriptionService
         return Subscription::create([
             'tenant_id' => $tenant->id,
             'plan_id' => $plan->id,
+            'shop_type' => $plan->shop_type,
             'status' => $plan->trial_days > 0 ? Subscription::STATUS_TRIALING : Subscription::STATUS_ACTIVE,
             'starts_at' => $startsAt,
             'trial_ends_at' => $plan->trial_days > 0 ? $startsAt->copy()->addDays($plan->trial_days) : null,
         ]);
+    }
+
+    /**
+     * Subscribe a tenant to a (per-shop-type) plan and auto-provision a store of
+     * the plan's shop type. A tenant may hold several concurrent subscriptions —
+     * one per shop type. Returns ['subscription' => ..., 'store' => ...].
+     */
+    public function subscribeToPlan(
+        MultiTenant $tenant,
+        Plan $plan,
+        ?User $owner = null,
+        bool $isDefault = false,
+        ?string $storeName = null
+    ): array {
+        $shopType = $plan->shop_type ?: 'retail';
+        $label = Plan::SHOP_TYPES[$shopType] ?? ucfirst(str_replace('_', '-', $shopType));
+
+        $store = Store::create([
+            'name'       => $storeName ?: $label,
+            'shop_type'  => $shopType,
+            'tenant_id'  => $tenant->id,
+            'status'     => true,
+            'is_default' => $isDefault,
+        ]);
+
+        if ($owner) {
+            \App\Models\UserStore::firstOrCreate([
+                'user_id'  => $owner->id,
+                'store_id' => $store->id,
+            ]);
+        }
+
+        $startsAt = now();
+        $subscription = Subscription::create([
+            'tenant_id'     => $tenant->id,
+            'plan_id'       => $plan->id,
+            'shop_type'     => $shopType,
+            'store_id'      => $store->id,
+            'status'        => $plan->trial_days > 0 ? Subscription::STATUS_TRIALING : Subscription::STATUS_ACTIVE,
+            'starts_at'     => $startsAt,
+            'trial_ends_at' => $plan->trial_days > 0 ? $startsAt->copy()->addDays($plan->trial_days) : null,
+        ]);
+
+        return ['subscription' => $subscription, 'store' => $store];
+    }
+
+    /**
+     * All of a tenant's currently-usable subscriptions (not canceled/expired/
+     * suspended, and not past their end date). With multi-plan, a tenant can
+     * have several at once — one per shop type.
+     */
+    public function activeSubscriptions(?string $tenantId)
+    {
+        if (! $tenantId) {
+            return collect();
+        }
+
+        return Subscription::query()
+            ->with('plan')
+            ->where('tenant_id', $tenantId)
+            ->whereNotIn('status', [
+                Subscription::STATUS_CANCELED,
+                Subscription::STATUS_SUSPENDED,
+                Subscription::STATUS_EXPIRED,
+            ])
+            ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
+            ->get();
     }
 
     /**

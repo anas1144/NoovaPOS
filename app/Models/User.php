@@ -76,7 +76,7 @@ class User extends Authenticatable implements HasMedia, JsonResourceful, CanRese
 
     public const PATH = 'user_image';
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'shop_type'];
 
     /**
      * The attributes that are mass assignable.
@@ -199,5 +199,35 @@ class User extends Authenticatable implements HasMedia, JsonResourceful, CanRese
     public function tenant()
     {
         return $this->belongsTo(MultiTenant::class);
+    }
+
+    /**
+     * The shop/business type of the user's currently active store
+     * (active_store_id), falling back to the tenant's default store, then
+     * "retail". Drives the per-shop-type sidebar gating on the frontend.
+     */
+    public function getShopTypeAttribute(): string
+    {
+        try {
+            $store = null;
+
+            if (! empty($this->active_store_id)) {
+                $store = Store::withoutGlobalScopes()
+                    ->select(['id', 'shop_type'])
+                    ->find($this->active_store_id);
+            }
+
+            if (! $store && ! empty($this->tenant_id)) {
+                $store = Store::withoutGlobalScopes()
+                    ->select(['id', 'shop_type', 'is_default'])
+                    ->where('tenant_id', $this->tenant_id)
+                    ->orderByDesc('is_default')
+                    ->first();
+            }
+
+            return $store?->shop_type ?: 'retail';
+        } catch (\Throwable $e) {
+            return 'retail';
+        }
     }
 }

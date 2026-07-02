@@ -28,7 +28,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            // FK to central 'tenants' table removed: tenants lives in the central DB, not the per-tenant DB.
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
             $table->foreign('recurring_plan_id')->references('id')->on('recurring_plans')->onDelete('cascade');
             $table->index(['tenant_id', 'status']);

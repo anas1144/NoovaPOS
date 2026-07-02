@@ -21,16 +21,21 @@ import { addToast } from "../../../store/action/toastAction";
  */
 const AddDealButton = ({ updateProducts, setUpdateProducts }) => {
     const dispatch = useDispatch();
+    // Deals are a restaurant-only POS action.
+    const [isRestaurant, setIsRestaurant] = useState(false);
     const [enabled, setEnabled] = useState(false);
     const [show, setShow] = useState(false);
     const [deals, setDeals] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        // Only offer deals when the feature is enabled for this store.
+        // Restaurant-only action — driven by the active store's shop type.
         apiConfig
             .get(apiBaseURL.MY_FEATURES)
-            .then((res) => setEnabled(!!res.data?.data?.deals))
+            .then((res) => {
+                setEnabled(!!res.data?.data?.deals);
+                setIsRestaurant(res.data?.data?.shop_type === "restaurant");
+            })
             .catch(() => {});
     }, []);
 
@@ -111,7 +116,7 @@ const AddDealButton = ({ updateProducts, setUpdateProducts }) => {
         setShow(false);
     };
 
-    if (!enabled) return null;
+    if (!isRestaurant) return null;
 
     return (
         <>

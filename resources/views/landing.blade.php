@@ -84,9 +84,23 @@ tailwind.config = {
       <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="#features">Features</a>
       <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="#business-types">Business Types</a>
       {{-- Dynamic CMS menu (shop-type pages, FBR, etc.) managed by the super admin --}}
-      @foreach(($cmsMenu ?? []) as $cm)
-        <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="/p/{{ $cm->slug }}">{{ $cm->title }}</a>
-      @endforeach
+      @if(count($cmsMenu ?? []))
+        <div class="relative group">
+          <button type="button" class="flex items-center gap-1 text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm focus:outline-none">
+            Solutions
+            <span class="material-symbols-outlined text-[18px] leading-none transition-transform duration-200 group-hover:rotate-180">expand_more</span>
+          </button>
+          {{-- pt-2 acts as an invisible hover bridge so the menu doesn't close
+               when the cursor moves from the button down to the panel --}}
+          <div class="absolute left-1/2 -translate-x-1/2 top-full pt-3 w-60 z-50 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-200">
+            <div class="bg-[#0d1630] border border-[rgba(255,255,255,0.1)] rounded-xl shadow-2xl p-2 max-h-[75vh] overflow-y-auto">
+              @foreach(($cmsMenu ?? []) as $cm)
+                <a class="block px-3 py-2 rounded-lg text-sm text-[#c3c6d7] hover:bg-[rgba(37,99,235,0.12)] hover:text-[#dae2fd] transition-colors" href="/p/{{ $cm->slug }}">{{ $cm->title }}</a>
+              @endforeach
+            </div>
+          </div>
+        </div>
+      @endif
       <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="#pricing">Pricing</a>
       <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="/blog">Blog</a>
       <a class="text-[#c3c6d7] hover:text-[#dae2fd] transition-colors text-sm" href="#contact">Contact</a>
@@ -109,6 +123,19 @@ tailwind.config = {
   <div id="mobile-menu" class="md:hidden bg-[#0d1630] border-t border-[rgba(255,255,255,0.07)] px-5 py-4 space-y-3">
     <a href="#features" onclick="toggleMobileMenu()" class="block text-[#c3c6d7] hover:text-white py-2">Features</a>
     <a href="#business-types" onclick="toggleMobileMenu()" class="block text-[#c3c6d7] hover:text-white py-2">Business Types</a>
+    @if(count($cmsMenu ?? []))
+      <details class="group/sol">
+        <summary class="flex items-center justify-between cursor-pointer list-none text-[#c3c6d7] hover:text-white py-2">
+          <span>Solutions</span>
+          <span class="material-symbols-outlined text-[20px] transition-transform group-open/sol:rotate-180">expand_more</span>
+        </summary>
+        <div class="mt-1 ml-3 pl-3 border-l border-[rgba(255,255,255,0.1)] space-y-1">
+          @foreach(($cmsMenu ?? []) as $cm)
+            <a href="/p/{{ $cm->slug }}" onclick="toggleMobileMenu()" class="block text-sm text-[#94A3B8] hover:text-white py-1.5">{{ $cm->title }}</a>
+          @endforeach
+        </div>
+      </details>
+    @endif
     <a href="#pricing" onclick="toggleMobileMenu()" class="block text-[#c3c6d7] hover:text-white py-2">Pricing</a>
     <a href="#fbr" onclick="toggleMobileMenu()" class="block text-[#c3c6d7] hover:text-white py-2">FBR Pakistan</a>
     <a href="#contact" onclick="toggleMobileMenu()" class="block text-[#c3c6d7] hover:text-white py-2">Contact</a>
@@ -177,24 +204,25 @@ tailwind.config = {
   </div>
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-5">
     @foreach ([
-      ['storefront','Retail','Inventory, barcoding, supplier management','primary'],
-      ['restaurant','Restaurant','Table management, KDS, recipe costing','secondary'],
-      ['medical_services','Pharmacy','Batch expiry tracking and formula sales','tertiary'],
-      ['water_drop','Water Supply','Subscription billing and route optimization','primary'],
-      ['bakery_dining','Bakery','Waste tracking and morning prep lists','secondary'],
-      ['devices','Electronics','Serial number tracking and warranty logs','tertiary'],
-      ['apparel','Fashion','Size/colour matrix and style inventory','primary'],
-      ['local_shipping','Distribution','B2B credit management and load sheets','secondary'],
-      ['history_edu','Monthly Svc','Recurring billing and automated invoicing','tertiary'],
-      ['settings_suggest','Custom','Flexible ERP core for unique workflows','primary'],
-    ] as [$icon, $name, $desc, $color])
-    <div class="glass-card p-5 rounded-xl space-y-3 group transition-all cursor-default">
+      ['storefront','Retail','Inventory, barcoding, supplier management','primary','pos/retail'],
+      ['restaurant','Restaurant','Table management, KDS, recipe costing','secondary','pos/restaurant'],
+      ['medical_services','Pharmacy','Batch expiry tracking and formula sales','tertiary','pos/pharmacy'],
+      ['water_drop','Water Supply','Subscription billing and route optimization','primary','pos/water-supply'],
+      ['bakery_dining','Bakery','Waste tracking and morning prep lists','secondary','pos/bakery'],
+      ['devices','Electronics','Serial number tracking and warranty logs','tertiary','pos/electronics'],
+      ['apparel','Fashion','Size/colour matrix and style inventory','primary','pos/fashion'],
+      ['local_shipping','Distribution','B2B credit management and load sheets','secondary','pos/distribution'],
+      ['history_edu','Monthly Svc','Recurring billing and automated invoicing','tertiary','pos/monthly-service'],
+      ['settings_suggest','Custom','Flexible ERP core for unique workflows','primary','pos/custom'],
+    ] as [$icon, $name, $desc, $color, $slug])
+    <a href="/p/{{ $slug }}" class="glass-card p-5 rounded-xl space-y-3 group transition-all block hover:border-[#2563eb]">
       <div class="w-11 h-11 rounded-lg bg-{{ $color }}/10 flex items-center justify-center text-{{ $color }} group-hover:scale-110 transition-transform">
         <span class="material-symbols-outlined text-[22px]">{{ $icon }}</span>
       </div>
-      <h3 class="font-semibold text-base text-[#dae2fd]">{{ $name }}</h3>
+      <h3 class="font-semibold text-base text-[#dae2fd] group-hover:text-white">{{ $name }}</h3>
       <p class="text-sm text-[#94A3B8]">{{ $desc }}</p>
-    </div>
+      <span class="text-xs text-[#7bd0ff] inline-flex items-center gap-1">View plans &amp; details <span class="material-symbols-outlined text-[14px]">arrow_forward</span></span>
+    </a>
     @endforeach
   </div>
 </section>
@@ -278,7 +306,7 @@ tailwind.config = {
       </div>
     </div>
 
-    {{-- Plans grid (populated by JS) --}}
+    {{-- Generic tier plans (populated by JS) --}}
     <div id="pricing-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {{-- Skeleton loaders --}}
       @for ($i = 0; $i < 4; $i++)
@@ -286,6 +314,15 @@ tailwind.config = {
       @endfor
     </div>
     <p id="pricing-error" class="hidden text-center text-[#94A3B8] mt-8">Unable to load plans — <a href="#contact" class="text-[#2563eb] underline">contact us</a> for pricing.</p>
+
+    {{-- Per-shop-type plans, grouped by business type (populated by JS) --}}
+    <div id="pricing-types" class="hidden mt-20">
+      <div class="text-center mb-8 space-y-2">
+        <h3 class="text-2xl font-semibold text-[#dae2fd]">A Plan for Every Business Type</h3>
+        <p class="text-[#94A3B8] text-sm">One plan per shop type — subscribe to several to run multiple business types under one account.</p>
+      </div>
+      <div id="pricing-types-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+    </div>
   </div>
 </section>
 
@@ -727,49 +764,88 @@ function formatPrice(plan) {
   return `<span class="text-4xl font-bold text-[#dae2fd]">${sym}${Number(price).toLocaleString()}</span><span class="text-[#94A3B8] text-sm ml-1">${period}</span>`;
 }
 
+// Shop-type label + CMS-page slug for the per-type plan cards.
+const SHOP_TYPE_META = {
+  retail:          { label: 'Retail',          slug: 'pos/retail' },
+  restaurant:      { label: 'Restaurant',      slug: 'pos/restaurant' },
+  pharmacy:        { label: 'Pharmacy',        slug: 'pos/pharmacy' },
+  water_supply:    { label: 'Water Supply',    slug: 'pos/water-supply' },
+  bakery:          { label: 'Bakery',          slug: 'pos/bakery' },
+  electronics:     { label: 'Electronics',     slug: 'pos/electronics' },
+  fashion:         { label: 'Fashion',         slug: 'pos/fashion' },
+  distribution:    { label: 'Distribution',    slug: 'pos/distribution' },
+  monthly_service: { label: 'Monthly Service', slug: 'pos/monthly-service' },
+  fbr_digital:     { label: 'FBR Digital',     slug: 'pos/fbr-digital' },
+  custom:          { label: 'Custom',          slug: 'pos/custom' },
+};
+
+function planCardHtml(plan, featuredId) {
+  const isFeatured = plan.is_featured || plan.id === featuredId;
+  const features = (() => {
+    try { return typeof plan.features === 'string' ? JSON.parse(plan.features) : (plan.features ?? []); }
+    catch { return []; }
+  })();
+  const btnClass = isFeatured
+    ? 'w-full py-3 electric-gradient-bg text-white rounded-xl font-bold shadow-lg hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all active:scale-95 mt-auto'
+    : 'w-full py-3 glass-card border border-[rgba(255,255,255,0.1)] rounded-xl font-bold text-[#dae2fd] hover:bg-white/10 transition-all active:scale-95 mt-auto';
+  const btnLabel = plan.is_contact_sales || plan.is_custom
+    ? 'Contact Sales'
+    : isFeatured ? `Go ${plan.name}` : `Choose ${plan.name}`;
+  const btnAction = plan.is_contact_sales || plan.is_custom
+    ? `onclick="openDemoModal()"`
+    : `onclick="window.location='/register-tenant'"`;
+  const meta = plan.shop_type ? SHOP_TYPE_META[plan.shop_type] : null;
+  const typeBadge = meta ? `<div class="text-xs font-bold text-[#7bd0ff] uppercase tracking-widest mb-2">${meta.label}</div>` : '';
+  const detailsLink = meta ? `<a href="/p/${meta.slug}" class="text-xs text-[#7bd0ff] hover:underline">View ${meta.label} details →</a>` : '';
+
+  return `
+    <div class="glass-card p-7 rounded-2xl flex flex-col gap-5 relative ${isFeatured ? 'ring-2 ring-[#2563eb] bg-[rgba(37,99,235,0.06)]' : ''}">
+      ${isFeatured ? '<div class="absolute -top-4 left-1/2 -translate-x-1/2 electric-gradient-bg text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap">Most Popular</div>' : ''}
+      <div>
+        ${typeBadge || `<div class="text-xs font-bold text-[#2563eb] uppercase tracking-widest mb-2">${plan.name}</div>`}
+        ${meta ? `<div class="font-semibold text-[#dae2fd] mb-1">${plan.name}</div>` : ''}
+        <div class="flex items-baseline gap-1">${formatPrice(plan)}</div>
+        ${plan.description ? `<p class="text-xs text-[#94A3B8] mt-2 leading-relaxed">${plan.description}</p>` : ''}
+      </div>
+      ${features.length ? `
+      <ul class="space-y-2.5 flex-1">
+        ${features.slice(0, 6).map(f => `
+        <li class="flex items-start gap-2 text-sm text-[#dae2fd]">
+          <span class="material-symbols-outlined text-[#4edea3] text-base shrink-0 mt-0.5">check</span>
+          ${typeof f === 'string' ? f.replace(/_/g, ' ') : f}
+        </li>`).join('')}
+      </ul>` : '<div class="flex-1"></div>'}
+      ${detailsLink}
+      ${plan.trial_days ? `<div class="text-xs text-[#4edea3] font-semibold">${plan.trial_days}-day free trial included</div>` : ''}
+      <button ${btnAction} class="${btnClass}">${btnLabel}</button>
+    </div>`;
+}
+
 function renderPlans() {
   if (!plansData.length) return;
   const grid = document.getElementById('pricing-grid');
-  const featured = plansData.find(p => p.is_featured);
 
-  grid.innerHTML = plansData.map((plan, i) => {
-    const isFeatured = plan.is_featured || plan.id === (featured && featured.id);
-    const features = (() => {
-      try { return typeof plan.features === 'string' ? JSON.parse(plan.features) : (plan.features ?? []); }
-      catch { return []; }
-    })();
+  // Split: generic tier plans (no shop_type) vs per-shop-type plans.
+  const tierPlans = plansData.filter(p => !p.shop_type);
+  const typePlans = plansData.filter(p => p.shop_type);
+  const order = Object.keys(SHOP_TYPE_META);
+  typePlans.sort((a, b) => order.indexOf(a.shop_type) - order.indexOf(b.shop_type));
 
-    const btnClass = isFeatured
-      ? 'w-full py-3 electric-gradient-bg text-white rounded-xl font-bold shadow-lg hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all active:scale-95 mt-auto'
-      : 'w-full py-3 glass-card border border-[rgba(255,255,255,0.1)] rounded-xl font-bold text-[#dae2fd] hover:bg-white/10 transition-all active:scale-95 mt-auto';
+  // Main grid shows tier plans; if there are none (only per-type plans exist),
+  // show the per-type plans here instead — and hide the separate block to avoid
+  // duplicating them.
+  const mainPlans = tierPlans.length ? tierPlans : typePlans;
+  const featured = (tierPlans.find(p => p.is_featured) || {}).id;
+  grid.innerHTML = mainPlans.map(p => planCardHtml(p, featured)).join('');
 
-    const btnLabel = plan.is_contact_sales || plan.is_custom
-      ? 'Contact Sales'
-      : isFeatured ? `Go ${plan.name}` : `Choose ${plan.name}`;
-    const btnAction = plan.is_contact_sales || plan.is_custom
-      ? `onclick="openDemoModal()"`
-      : `onclick="window.location='/register-tenant'"`;
-
-    return `
-      <div class="glass-card p-7 rounded-2xl flex flex-col gap-5 relative ${isFeatured ? 'ring-2 ring-[#2563eb] bg-[rgba(37,99,235,0.06)]' : ''}">
-        ${isFeatured ? '<div class="absolute -top-4 left-1/2 -translate-x-1/2 electric-gradient-bg text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap">Most Popular</div>' : ''}
-        <div>
-          <div class="text-xs font-bold text-[#2563eb] uppercase tracking-widest mb-2">${plan.name}</div>
-          <div class="flex items-baseline gap-1">${formatPrice(plan)}</div>
-          ${plan.description ? `<p class="text-xs text-[#94A3B8] mt-2 leading-relaxed">${plan.description}</p>` : ''}
-        </div>
-        ${features.length ? `
-        <ul class="space-y-2.5 flex-1">
-          ${features.slice(0, 6).map(f => `
-          <li class="flex items-start gap-2 text-sm text-[#dae2fd]">
-            <span class="material-symbols-outlined text-[#4edea3] text-base shrink-0 mt-0.5">check</span>
-            ${f}
-          </li>`).join('')}
-        </ul>` : '<div class="flex-1"></div>'}
-        ${plan.trial_days ? `<div class="text-xs text-[#4edea3] font-semibold">${plan.trial_days}-day free trial included</div>` : ''}
-        <button ${btnAction} class="${btnClass}">${btnLabel}</button>
-      </div>`;
-  }).join('');
+  const typesWrap = document.getElementById('pricing-types');
+  const typesGrid = document.getElementById('pricing-types-grid');
+  if (tierPlans.length && typePlans.length) {
+    typesGrid.innerHTML = typePlans.map(p => planCardHtml(p, null)).join('');
+    typesWrap.classList.remove('hidden');
+  } else {
+    typesWrap.classList.add('hidden');
+  }
 }
 
 async function loadPlans() {

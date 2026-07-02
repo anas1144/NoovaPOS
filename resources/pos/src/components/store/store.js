@@ -24,6 +24,7 @@ const Store = () => {
         if (stores.length >= 0) {
             const mappedStore = stores.map((item) => ({
                 name: item?.attributes?.name,
+                shop_type: item?.attributes?.shop_type,
                 status: item?.attributes?.status ? 1 : 0,
                 active: item?.attributes?.active,
                 users: item?.attributes?.users,
@@ -132,7 +133,6 @@ const Store = () => {
                 isLoading={isLoading}
                 pagination={false}
                 isShowSearch
-                AddButton={<AddStoreButton />}
                 isCallFetchDataApi={isCallFetchDataApi}
             />
             <StoreForm show={showEditModal} isEdit={true} data={editData} handleClose={() => setShowEditModal(false)} title={placeholderText("edit.store.title")} />

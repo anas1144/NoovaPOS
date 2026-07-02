@@ -1,0 +1,8 @@
+/* Project-wide style overrides (always loaded via index.jsx). */
+
+/* Base text color for the document/root containers. */
+html,
+body,
+#root {
+    color: #000;
+}

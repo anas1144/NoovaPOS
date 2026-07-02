@@ -13,6 +13,8 @@ import { addToast } from "../../../store/action/toastAction";
  */
 const SendToKitchen = ({ updateProducts, setUpdateProducts }) => {
     const dispatch = useDispatch();
+    // Sending to the kitchen is a restaurant-only POS action.
+    const [isRestaurant, setIsRestaurant] = useState(false);
     const [show, setShow] = useState(false);
     const [tables, setTables] = useState([]);
     const [tableId, setTableId] = useState("");
@@ -21,10 +23,13 @@ const SendToKitchen = ({ updateProducts, setUpdateProducts }) => {
     const [kitchenEnabled, setKitchenEnabled] = useState(false);
 
     useEffect(() => {
-        // Only show this action when the Kitchen feature is enabled for the store.
+        // Restaurant-only action — driven by the active store's shop type.
         apiConfig
             .get(apiBaseURL.MY_FEATURES)
-            .then((res) => setKitchenEnabled(!!res.data?.data?.kitchen))
+            .then((res) => {
+                setKitchenEnabled(!!res.data?.data?.kitchen);
+                setIsRestaurant(res.data?.data?.shop_type === "restaurant");
+            })
             .catch(() => {});
     }, []);
 
@@ -116,7 +121,7 @@ const SendToKitchen = ({ updateProducts, setUpdateProducts }) => {
             .finally(() => setSending(false));
     };
 
-    if (!kitchenEnabled) {
+    if (!isRestaurant) {
         return null;
     }
 

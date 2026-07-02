@@ -79,9 +79,19 @@ const CreateTenantModal = ({ show, onHide }) => {
         owner_phone: "",
         owner_password: "",
         subdomain: "",
-        plan_id: "",
+        plan_ids: [],
     });
     const plans = useSelector((s) => s.platform?.plans || []);
+
+    // A tenant can subscribe to several plans (one per shop type); each plan
+    // provisions a store of its shop type. Only show per-shop-type plans here.
+    const typePlans = plans.filter((p) => p.shop_type);
+
+    const togglePlan = (id) =>
+        setForm((f) => {
+            const has = f.plan_ids.includes(id);
+            return { ...f, plan_ids: has ? f.plan_ids.filter((x) => x !== id) : [...f.plan_ids, id] };
+        });
 
     useEffect(() => {
         if (show) dispatch(fetchPlatformPlans());
@@ -164,20 +174,35 @@ const CreateTenantModal = ({ show, onHide }) => {
                             onChange={setF("owner_password")}
                         />
                     </div>
-                    <div className="col-md-6 mb-3">
-                        <label className="form-label">Initial Plan</label>
-                        <select
-                            className="form-control"
-                            value={form.plan_id}
-                            onChange={setF("plan_id")}
-                        >
-                            <option value="">-- Optional --</option>
-                            {plans.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                    {p.name} ({p.billing_cycle})
-                                </option>
+                    <div className="col-md-12 mb-3">
+                        <label className="form-label">Plans (one per shop type)</label>
+                        <small className="text-muted d-block mb-2">
+                            Pick one or more. Each selected plan creates a store of its
+                            shop type. The first becomes the default store.
+                        </small>
+                        <div className="row">
+                            {typePlans.length === 0 && (
+                                <div className="col-12 text-muted">No per-shop-type plans found.</div>
+                            )}
+                            {typePlans.map((p) => (
+                                <div className="col-md-6 mb-2" key={p.id}>
+                                    <label className="d-flex align-items-start gap-2 border rounded p-2 h-100" style={{ cursor: "pointer" }}>
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input mt-1"
+                                            checked={form.plan_ids.includes(p.id)}
+                                            onChange={() => togglePlan(p.id)}
+                                        />
+                                        <span>
+                                            <span className="fw-semibold d-block">{p.name}</span>
+                                            <span className="text-muted small">
+                                                {(p.shop_type || "").replace("_", " ")} · {p.billing_cycle} · ${Number(p.price).toFixed(0)}
+                                            </span>
+                                        </span>
+                                    </label>
+                                </div>
                             ))}
-                        </select>
+                        </div>
                     </div>
                 </div>
             </Modal.Body>
@@ -422,7 +447,7 @@ const PlatformTenants = () => {
                                 <td>{s.name}</td>
                                 <td>
                                     {s.is_default ? (
-                                        <span className="badge bg-light-primary">Primary</span>
+                                        <span className="badge bg-light-primary text-primary">Primary</span>
                                     ) : (
                                         "-"
                                     )}
@@ -431,8 +456,8 @@ const PlatformTenants = () => {
                                     <span
                                         className={`badge text-capitalize ${
                                             s.status
-                                                ? "bg-light-success"
-                                                : "bg-light-danger"
+                                                ? "bg-light-success text-success"
+                                                : "bg-light-danger text-danger"
                                         }`}
                                     >
                                         {s.status ? "active" : "inactive"}

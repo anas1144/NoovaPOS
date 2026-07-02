@@ -12,6 +12,8 @@ import { PersistGate } from 'redux-persist/integration/react'
 import reportWebVitals from './reportWebVitals';
 // Apply persisted light/dark theme as early as possible.
 import './utils/theme';
+// Project-wide style overrides (loaded last so they win over theme CSS).
+import './assets/global-overrides.css';
 
 const persistConfig = {
     key: 'root',

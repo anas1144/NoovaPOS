@@ -432,6 +432,16 @@ companies (`agent_tenants`).
 
 - **Businesses** (`/app/fbr-di/businesses`) — FBR sellers (NTN/STRN, province,
   sandbox/production tokens, environment).
+- **Products** (`/app/fbr-di/products`) — a dedicated DI item catalog
+  (`fbr_di_products`, separate from POS products): name, HS code, UoM, rate,
+  sales-tax %, SRO no./serial, sale type, category, status. The HS-code field is
+  an **autocomplete backed by FBR's reference API** (`GET /api/fbr-di/hs-codes`
+  → proxies `FBR_DI_HSCODE_URL`, default `…/pdi/v1/itemdesccode`, using a
+  business's FBR token; degrades to manual entry if unavailable). The invoice
+  form has a per-line **product picker** that auto-fills HS code / description /
+  UoM / rate / tax (free text still allowed).
+- **Sidebar:** `fbr_digital` stores show **only** the FBR Invoicing module — all
+  POS/inventory/sales sections are hidden (no POS billing).
 - **Invoices** (`/app/fbr-di/invoices`) — create **Draft** with line items +
   auto totals; edit/delete only while Draft; **controlled Sync** (permission
   `fbr_invoice_sync`) queues `SyncFbrDiInvoiceJob` on the `fbr` queue →
@@ -458,9 +468,53 @@ Real submission needs Horizon running + a valid integrator token on the business
 
 Price-tier selector, **Add Deal**, **Mixed Units**, feature-gated **Send to
 Kitchen** with delta-KOT reprint, and online subscription **checkout** are all
-in place. Each was verified per-file; run one **test sale** on a real build to
-confirm end-to-end before relying on them in production, since the sale-save and
-KOT paths can't be exercised in the dev sandbox.
+in place. **Add Deal** and **Send to Kitchen** are **restaurant-only** — they
+render only when the active store's `shop_type === "restaurant"`, resolved
+server-side from `GET /api/my-features` (which now also returns the active
+store's `shop_type`). Each was verified per-file; run one **test sale** on a
+real build to confirm end-to-end before relying on them in production, since the
+sale-save and KOT paths can't be exercised in the dev sandbox.
+
+### Shop-type-driven UX (recent)
+
+The UI now adapts to the active store's business type end-to-end:
+
+- **Onboarding** (Platform → Tenants → Onboard) — pick an **Initial Plan** and a
+  **Shop Type**; the type list is restricted to the plan's allowed shop types
+  (`Plan::allowedShopTypes()`), the choice is enforced server-side, and the
+  chosen plan is actually applied to the new subscription.
+- **Sidebar gating** (`buildAsideConfig`): Restaurant (+ **Deals**/**Deliveries**,
+  moved under it) shows only for `restaurant`; **FBR Invoicing** only for
+  `fbr_digital`; `fbr_digital` shows **only** FBR Invoicing. The active type
+  comes from `loginUser.shop_type`.
+- **Active shop type** is now attached to the user: a `User::getShopType()`
+  accessor (resolves `active_store_id` → default store → `retail`) appended to
+  the model and returned at login; `changeStore` updates it live so switching
+  stores re-gates the sidebar and refreshes the tab title.
+- **Stores carry a `shop_type`** (box: edit modal shows/saves it; shops inherit
+  it). Tenant DBs get the column via a relocated migration.
+
+### Build / toolchain & dependency notes (recent)
+
+- Upgraded to run on **PHP 8.3 / Laravel 11**: bumped `barryvdh/laravel-ide-helper`
+  (^3), `nunomaduro/collision` (^8), `phpunit` (^11); set `config.platform` for
+  `php`/`ext-pcntl`/`ext-posix` so Composer resolves on Windows (Horizon still
+  runs on Linux only — use `queue:work` locally).
+- **spatie/laravel-permission v6**: migration uses config pivot columns (not the
+  removed `PermissionRegistrar::$pivot*` statics); middleware aliases point to
+  `Spatie\Permission\Middleware\` (singular).
+- **spatie/laravel-query-builder v6**: repository criteria pass a query builder
+  (not a model instance) to `QueryBuilder::for()`.
+- **react-router** deduped to a single v6.30 (router context crash fix).
+- Frontend pinned to **stable Vite 7** + `@vitejs/plugin-react`; JSX-in-`.js`
+  handled via esbuild loader (the project keeps JSX in hundreds of `.js` files).
+- **Hybrid DB-per-tenant**: `tenancy:create-databases` only provisions tenants
+  flagged `uses_separate_db` and migrates straight into each tenant DB; enabling
+  Separate DB in Platform → Tenants now provisions on the spot. Tenant migration
+  copies had cross-DB FKs to the central `tenants` table removed.
+- **CMS/marketing**: shop-type and FBR landing pages seeded with real content;
+  22 starter blog posts; `/p/{slug}` route accepts slashes; nav collapsed into a
+  **Solutions** dropdown (landing + CMS layout).
 
 > Note: the printed customer slip already shows the sale/invoice id. The **FBR
 > invoice number** is assigned asynchronously by the FBR sync queue (Pakistan),
@@ -677,6 +731,8 @@ TENANT_BASE_DOMAIN=noovapos.local
 | Platform | `/platform/dashboard`, `/platform/tenants`, `/platform/plans`, `/platform/subscriptions`, `/platform/audit-logs`, `/platform/backups` |
 | Tenant | CRUD: `/stores`, `/shops`, `/users`, `/products`, `/sales`, `/purchases`, `/customers`, … |
 | FBR | `/fbr-profiles`, `/fbr-invoices`, `/fbr-invoices/{id}/submit`, `/fbr-invoices/{id}/retry`, `/fbr-invoices/process-queue` |
+| FBR-DI | `/fbr-di/businesses`, `/fbr-di/products`, `/fbr-di/hs-codes`, `/fbr-di/invoices`, `/fbr-di/invoices/{id}/sync`, `/fbr-di/dashboard`, `/fbr-di/reports/*` |
+| Shop type | `GET /my-features` (returns enabled features **and** the active store's `shop_type`) |
 | Offline Sync | `/offline-devices`, `/offline-devices/register`, `/offline-devices/{id}/heartbeat`, `/offline-sync/batches`, `/sync-queue` |
 | Stock | `/stock-movements`, `/stock-movements-summary` |
 | Restaurant | `/restaurant/halls`, `/restaurant/tables`, `/restaurant/tables/{id}/state`, `/restaurant/kots`, `/restaurant/kots/{id}/status` |
@@ -716,6 +772,10 @@ journal_entries / _lines      balanced JE header + lines
 notifications_outbox          channel-agnostic notification queue
 employees / attendances       HR module
 crm_leads                     CRM pipeline leads
+fbr_businesses                FBR DI sellers (per company/tenant)
+fbr_di_invoices / _items      FBR digital invoices + line items
+fbr_di_products               FBR DI item catalog (HS code, UoM, rate, SRO)
+fbr_di_limits / agent_tenants FBR DI plan quotas + agent→company links
 ```
 
 ---

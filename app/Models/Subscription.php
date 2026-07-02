@@ -22,6 +22,8 @@ class Subscription extends BaseModel
     protected $fillable = [
         'tenant_id',
         'plan_id',
+        'shop_type',
+        'store_id',
         'status',
         'starts_at',
         'trial_ends_at',

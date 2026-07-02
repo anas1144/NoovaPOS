@@ -149,7 +149,8 @@ import AttendanceReports from "./components/attendance/AttendanceReports";
 import AttendanceRequests from "./components/attendance/AttendanceRequests";
 import DeviceConnectors from "./components/attendance/DeviceConnectors";
 import FbrBusinesses from "./components/fbrDigital/FbrBusinesses";
-import FbrInvoices from "./components/fbrDigital/FbrInvoices";
+import FbrProducts from "./components/fbrDigital/FbrProducts";
+import FbrDiInvoices from "./components/fbrDigital/FbrInvoices";
 import FbrInvoiceForm from "./components/fbrDigital/FbrInvoiceForm";
 import FbrErrors from "./components/fbrDigital/FbrErrors";
 import FbrSandbox from "./components/fbrDigital/FbrSandbox";
@@ -927,8 +928,13 @@ export const route = [
         permission: "",
     },
     {
+        path: "fbr-di/products",
+        ele: <FbrProducts />,
+        permission: "",
+    },
+    {
         path: "fbr-di/invoices",
-        ele: <FbrInvoices />,
+        ele: <FbrDiInvoices />,
         permission: "",
     },
     {

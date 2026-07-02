@@ -55,7 +55,11 @@ class DatabaseSeeder extends Seeder
         // ── 5e. Starter marketing CMS content (landing + shop-type + FBR pages)
         $this->call(CmsSeeder::class);
 
-        // ── 6. Demo tenant hierarchy (local / dev only)
+        // ── 5f. Starter marketing blog posts
+        $this->call(BlogSeeder::class);
+
+        // ── 6. Demo tenant hierarchy — ABC Group built entirely from plans
+        // (subscribes to every per-shop-type plan → one store per type).
         if (app()->environment(['local', 'development', 'testing'])) {
             $this->call(HierarchyDemoSeeder::class);
         }

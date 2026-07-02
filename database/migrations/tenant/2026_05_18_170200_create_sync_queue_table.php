@@ -25,7 +25,7 @@ return new class extends Migration
             $table->timestamp('synced_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete()->cascadeOnUpdate();
+            // FK to central 'tenants' table removed: tenants lives in the central DB, not the per-tenant DB.
             $table->foreign('offline_device_id')->references('id')->on('offline_devices')->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreign('sync_batch_id')->references('id')->on('sync_batches')->nullOnDelete()->cascadeOnUpdate();
             $table->unique(['tenant_id', 'offline_device_id', 'local_uuid']);
